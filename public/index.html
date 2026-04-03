@@ -315,7 +315,7 @@
 // API_BASE: auto-detect environment
 //   - localhost (dev):  use relative /api  (served by local Node.js)
 //   - Android app / deployed: use the Railway backend URL
-const RAILWAY_URL = 'https://your-app-name.railway.app'; // ← 部署后填入 Railway URL
+const RAILWAY_URL = 'https://foodrank-production.up.railway.app';
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? '/api'
   : `${RAILWAY_URL}/api`;
