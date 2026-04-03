@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FoodRank – 美食排行榜</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif; background: #f0f0f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+  /* Phone shell */
+  .phone { width: 390px; height: 844px; background: #fff; border-radius: 44px; box-shadow: 0 40px 120px rgba(0,0,0,0.35), inset 0 0 0 2px #ddd; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .status-bar .time { font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+  .screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .screen.active { display: flex; }
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Nav bar */
+  .nav-bar { height: 52px; display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; }
+  .nav-back { width: 36px; height: 36px; border-radius: 50%; background: #f0f0f5; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; border: none; }
+  .nav-title { font-size: 17px; font-weight: 700; color: #111; flex: 1; }
+
+  /* Bottom tab bar */
+  .tab-bar { height: 82px; background: #fff; border-top: 1px solid #e8e8e8; display: flex; align-items: flex-start; padding-top: 10px; flex-shrink: 0; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; color: #999; font-weight: 500; }
+  .tab-item.active .tab-label { color: #FF6B35; }
+  .tab-item.active .tab-icon { filter: none; }
+
+  /* ==================== HOME SCREEN ==================== */
+  #screen-home .header { background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%); padding: 20px 20px 28px; }
+  #screen-home .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .app-logo { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .app-logo span { color: #FFE0A3; }
+  .location-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .search-bar { background: #fff; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); cursor: pointer; }
+  .search-bar span { color: #bbb; font-size: 15px; }
+  .search-bar .search-icon { font-size: 18px; }
+
+  .section-title { font-size: 17px; font-weight: 700; color: #111; padding: 20px 20px 12px; }
+  .category-row { display: flex; gap: 10px; padding: 0 20px 4px; overflow-x: auto; }
+  .category-row::-webkit-scrollbar { display: none; }
+  .cat-chip { background: #fff; border: 1.5px solid #e8e8e8; border-radius: 24px; padding: 8px 16px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #333; display: flex; align-items: center; gap: 6px; flex-shrink: 0; transition: all 0.15s; }
+  .cat-chip:hover, .cat-chip.active { background: #FF6B35; border-color: #FF6B35; color: #fff; }
+
+  .trending-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px; }
+  .trend-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer; }
+  .trend-img { height: 100px; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .trend-info { padding: 10px 12px 12px; }
+  .trend-name { font-size: 13px; font-weight: 700; color: #111; }
+  .trend-sub { font-size: 11px; color: #999; margin-top: 2px; }
+  .trend-badge { display: inline-flex; align-items: center; gap: 3px; background: #fff3ee; color: #FF6B35; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 2px 6px; margin-top: 6px; }
+
+  /* ==================== SEARCH SCREEN ==================== */
+  #screen-search .search-header { background: #fff; padding: 12px 16px 16px; border-bottom: 1px solid #f0f0f0; }
+  .search-input-wrap { background: #f0f0f5; border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  .search-input { border: none; background: transparent; font-size: 16px; flex: 1; outline: none; color: #111; }
+  .search-btn { background: #FF6B35; color: #fff; border: none; border-radius: 10px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  .filter-row { display: flex; gap: 8px; padding: 12px 16px 4px; overflow-x: auto; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-chip { background: #f0f0f5; border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #555; flex-shrink: 0; border: 1.5px solid transparent; }
+  .filter-chip.active { background: #fff3ee; color: #FF6B35; border-color: #FF6B35; }
+
+  .results-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .rank-card { background: #fff; border-radius: 20px; padding: 16px; box-shadow: 0 2px 14px rgba(0,0,0,0.07); cursor: pointer; display: flex; gap: 14px; position: relative; transition: transform 0.1s; }
+  .rank-card:active { transform: scale(0.98); }
+  .rank-num { font-size: 28px; font-weight: 900; color: #e0e0e0; min-width: 32px; line-height: 1; padding-top: 2px; }
+  .rank-num.gold { color: #FFB800; }
+  .rank-num.silver { color: #B0B8C1; }
+  .rank-num.bronze { color: #C47B4E; }
+  .rank-img { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 40px; flex-shrink: 0; }
+  .rank-info { flex: 1; min-width: 0; }
+  .rank-name { font-size: 15px; font-weight: 800; color: #111; margin-bottom: 4px; }
+  .rank-meta { font-size: 12px; color: #888; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-score-big { position: absolute; top: 16px; right: 16px; text-align: center; }
+  .score-circle { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #FF6B35, #FF9B35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; font-weight: 900; }
+  .platform-scores { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .plat-badge { display: flex; align-items: center; gap: 3px; background: #f7f7f9; border-radius: 8px; padding: 3px 7px; font-size: 11px; font-weight: 600; color: #555; }
+  .plat-badge.google { background: #e8f5e9; color: #2e7d32; }
+  .plat-badge.redbook { background: #fff0f0; color: #e53935; }
+  .plat-badge.tiktok { background: #f0f0ff; color: #4040bb; }
+  .plat-badge.yt { background: #fff3e0; color: #e65100; }
+  .plat-badge.klfoodie { background: #f3e5f5; color: #7b1fa2; }
+  .badge-icon { font-size: 12px; }
+
+  /* ==================== DETAIL SCREEN ==================== */
+  #screen-detail .detail-hero { height: 220px; background: linear-gradient(135deg, #FFF3E0, #FFE0B2); display: flex; align-items: center; justify-content: center; font-size: 90px; flex-shrink: 0; position: relative; }
+  .detail-hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.4)); height: 80px; }
+  .detail-body { flex: 1; overflow-y: auto; }
+  .detail-body::-webkit-scrollbar { display: none; }
+  .detail-top { padding: 20px 20px 16px; }
+  .detail-name { font-size: 22px; font-weight: 900; color: #111; margin-bottom: 4px; }
+  .detail-meta { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .aggregate-score-row { display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #FF6B35, #FF8C42); border-radius: 20px; padding: 16px 20px; margin-bottom: 16px; }
+  .agg-score { font-size: 48px; font-weight: 900; color: #fff; line-height: 1; }
+  .agg-right { flex: 1; }
+  .agg-label { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 600; margin-bottom: 8px; }
+  .agg-stars { color: #FFE0A3; font-size: 20px; letter-spacing: 2px; }
+  .agg-count { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+  .platform-breakdown { padding: 0 20px 16px; }
+  .plat-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+  .plat-row:last-child { border-bottom: none; }
+  .plat-icon-big { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .plat-name { flex: 1; font-size: 14px; font-weight: 700; color: #333; }
+  .plat-count { font-size: 12px; color: #aaa; }
+  .plat-score-val { font-size: 18px; font-weight: 900; color: #333; }
+  .plat-bar-wrap { flex: 1; height: 6px; background: #f0f0f5; border-radius: 3px; overflow: hidden; margin-left: 8px; }
+  .plat-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #FF6B35, #FF9B35); }
+
+  .section-header { font-size: 17px; font-weight: 800; color: #111; padding: 16px 20px 12px; }
+
+  /* YouTube section */
+  .yt-scroll { display: flex; gap: 12px; padding: 0 20px 16px; overflow-x: auto; }
+  .yt-scroll::-webkit-scrollbar { display: none; }
+  .yt-card { flex-shrink: 0; width: 200px; border-radius: 14px; overflow: hidden; background: #000; cursor: pointer; position: relative; }
+  .yt-thumb { width: 200px; height: 112px; display: flex; align-items: center; justify-content: center; font-size: 56px; background: linear-gradient(135deg, #1a1a2e, #16213e); }
+  .yt-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); width: 42px; height: 42px; background: rgba(255,0,0,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+  .yt-info { padding: 8px 10px; background: #fff; }
+  .yt-title { font-size: 12px; font-weight: 700; color: #111; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .yt-channel { font-size: 11px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+  /* TikTok section */
+  .tiktok-scroll { display: flex; gap: 10px; padding: 0 20px 16px; overflow-x: auto; }
+  .tiktok-scroll::-webkit-scrollbar { display: none; }
+  .tiktok-card { flex-shrink: 0; width: 110px; border-radius: 12px; overflow: hidden; cursor: pointer; }
+  .tiktok-thumb { width: 110px; height: 195px; background: linear-gradient(135deg, #69C9D0, #EE1D52); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 42px; }
+  .tiktok-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 8px; }
+  .tiktok-views { color: #fff; font-size: 11px; font-weight: 700; }
+  .tiktok-user { font-size: 10px; color: rgba(255,255,255,0.8); }
+
+  /* Review cards */
+  .review-list { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .review-card { background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .review-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .reviewer-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #FF6B35, #FF9B35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .reviewer-name { font-size: 14px; font-weight: 700; color: #111; }
+  .reviewer-plat { font-size: 11px; color: #aaa; }
+  .review-stars { color: #FFB800; font-size: 13px; margin-left: auto; }
+  .review-text { font-size: 13px; color: #444; line-height: 1.6; }
+  .review-date { font-size: 11px; color: #bbb; margin-top: 6px; }
+  .review-tag { display: inline-flex; align-items: center; gap: 3px; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+
+  /* Xiaohongshu section */
+  .xhs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+  .xhs-card { background: #fff; border-radius: 14px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .xhs-img { height: 140px; background: linear-gradient(135deg, #FF6B6B, #FFB347); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .xhs-body { padding: 8px 10px 10px; }
+  .xhs-title { font-size: 12px; font-weight: 700; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+  .xhs-user { font-size: 11px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+  .xhs-likes { font-size: 11px; color: #ff4d4d; display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+
+  /* Open in app button */
+  .open-app-btn { margin: 0 16px 20px; background: linear-gradient(135deg, #FF6B35, #FF8C42); color: #fff; border: none; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 800; width: calc(100% - 32px); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+  /* Shimmer loading */
+  @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+  .shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 1000px 100%; animation: shimmer 1.5s infinite; }
+
+  /* Notification toast */
+  .toast { position: absolute; top: 60px; left: 20px; right: 20px; background: #222; color: #fff; border-radius: 14px; padding: 12px 16px; font-size: 13px; font-weight: 600; text-align: center; opacity: 0; transition: opacity 0.3s; z-index: 100; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* Loading overlay */
+  .loading-overlay { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 50; transition: opacity 0.4s; }
+  .loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+  .loading-dots { display: flex; gap: 8px; }
+  .loading-dot { width: 12px; height: 12px; border-radius: 50%; background: #FF6B35; animation: bounce 0.8s infinite alternate; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; background: #FF9B35; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; background: #FFB800; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+  .loading-text { font-size: 14px; color: #888; font-weight: 600; }
+
+  /* AI scanning effect */
+  .ai-scan { font-size: 13px; color: #FF6B35; font-weight: 700; text-align: center; }
+  .ai-scan span { display: inline-block; }
+
+  .badge-new { background: #FF6B35; color: #fff; font-size: 9px; font-weight: 800; border-radius: 5px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; }
+
+  .divider { height: 8px; background: #f5f5f7; margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <span class="status-icons">📶 WiFi 🔋</span>
+  </div>
+
+  <!-- TOAST notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ==================== SCREEN: HOME ==================== -->
+  <div class="screen active" id="screen-home">
+    <div class="scroll-area">
+      <div class="header">
+        <div class="header-top">
+          <div class="app-logo">Food<span>Rank</span> 🍜</div>
+          <div class="location-pill" onclick="showToast('📍 位置：Bukit Bintang, KL')">
+            📍 Bukit Bintang
+          </div>
+        </div>
+        <div class="search-bar" onclick="goToSearch()">
+          <span class="search-icon">🔍</span>
+          <span>今天想吃什么？</span>
+        </div>
+      </div>
+
+      <div class="section-title">🔥 热搜美食</div>
+      <div class="category-row">
+        <div class="cat-chip active" onclick="goToSearch('炒粿条')">🍜 炒粿条</div>
+        <div class="cat-chip" onclick="goToSearch('叉烧饭')">🍖 叉烧饭</div>
+        <div class="cat-chip" onclick="goToSearch('肉骨茶')">🥩 肉骨茶</div>
+        <div class="cat-chip" onclick="goToSearch('云吞面')">🍝 云吞面</div>
+        <div class="cat-chip" onclick="goToSearch('沙爹')">🍢 沙爹</div>
+        <div class="cat-chip" onclick="goToSearch('椰浆饭')">🍛 椰浆饭</div>
+      </div>
+
+      <div class="section-title">📊 附近排行 <span style="font-size:13px; color:#FF6B35; font-weight:600;">AI聚合评分</span></div>
+      <div class="trending-grid">
+        <div class="trend-card" onclick="goToDetail(0)">
+          <div class="trend-img" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2);">🍜</div>
+          <div class="trend-info">
+            <div class="trend-name">阿发炒粿条</div>
+            <div class="trend-sub">Jalan Alor · 280m</div>
+            <div class="trend-badge">⭐ 4.8 · 1,247 reviews</div>
+          </div>
+        </div>
+        <div class="trend-card" onclick="goToDetail(1)">
+          <div class="trend-img" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">🥩</div>
+          <div class="trend-info">
+            <div class="trend-name">老字号肉骨茶</div>
+            <div class="trend-sub">Kepong · 5.2km</div>
+            <div class="trend-badge">⭐ 4.9 · 3,521 reviews</div>
+          </div>
+        </div>
+        <div class="trend-card" onclick="goToSearch('叉烧饭')">
+          <div class="trend-img" style="background: linear-gradient(135deg, #FCE4EC, #F8BBD9);">🍖</div>
+          <div class="trend-info">
+            <div class="trend-name">正宗叉烧饭</div>
+            <div class="trend-sub">PJ SS2 · 12km</div>
+            <div class="trend-badge">⭐ 4.7 · 892 reviews</div>
+          </div>
+        </div>
+        <div class="trend-card" onclick="showToast('🚀 更多美食敬请期待！')">
+          <div class="trend-img" style="background: linear-gradient(135deg, #E3F2FD, #BBDEFB);">🍝</div>
+          <div class="trend-info">
+            <div class="trend-name">KL云吞面王</div>
+            <div class="trend-sub">Chow Kit · 3km</div>
+            <div class="trend-badge">⭐ 4.6 · 674 reviews</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">🤖 AI今日推荐</div>
+      <div style="margin: 0 16px 20px; background: linear-gradient(135deg, #f0f0ff, #e8e8ff); border-radius: 18px; padding: 16px;">
+        <div style="font-size: 13px; color: #666; line-height: 1.6;">
+          📍 <strong>根据你现在的位置</strong>，附近有 <strong style="color:#FF6B35;">23家炒粿条</strong>。<br>
+          综合 Google、小红书、TikTok、YouTube 最新评分，<strong>阿发炒粿条</strong>以 <strong style="color:#FF6B35;">4.8分</strong> 排名第一！🏆
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 8px;">
+          <div style="background: #fff; border-radius: 10px; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #555;">📺 42 影片</div>
+          <div style="background: #fff; border-radius: 10px; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #555;">📱 156 TikTok</div>
+          <div style="background: #fff; border-radius: 10px; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #555;">📕 89 小红书</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <div class="tab-icon">🏠</div>
+        <div class="tab-label">首页</div>
+      </div>
+      <div class="tab-item" onclick="goToSearch()">
+        <div class="tab-icon">🔍</div>
+        <div class="tab-label">搜索</div>
+      </div>
+      <div class="tab-item" onclick="showToast('📍 附近功能开发中')">
+        <div class="tab-icon">📍</div>
+        <div class="tab-label">附近</div>
+      </div>
+      <div class="tab-item" onclick="showToast('❤️ 收藏功能开发中')">
+        <div class="tab-icon">❤️</div>
+        <div class="tab-label">收藏</div>
+      </div>
+      <div class="tab-item" onclick="showToast('👤 个人页面开发中')">
+        <div class="tab-icon">👤</div>
+        <div class="tab-label">我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: SEARCH ==================== -->
+  <div class="screen" id="screen-search">
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="search-loading" style="display:none;">
+      <div style="font-size: 40px; margin-bottom: 8px;">🤖</div>
+      <div class="loading-dots">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+      <div class="loading-text" id="loading-text">AI 正在搜索各大平台...</div>
+      <div class="ai-scan" id="ai-scan-text">🔍 扫描 Google Reviews...</div>
+    </div>
+
+    <div class="search-header">
+      <div class="nav-bar" style="padding: 0; margin-bottom: 10px;">
+        <button class="nav-back" onclick="goBack()">←</button>
+        <div class="nav-title" id="search-title">搜索美食</div>
+        <div style="width:36px;"></div>
+      </div>
+      <div class="search-input-wrap">
+        <span>🔍</span>
+        <input class="search-input" id="search-input" type="text" placeholder="输入食物名称..." value="炒粿条">
+        <button class="search-btn" onclick="doSearch()">搜索</button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-chip active">📊 综合排名</div>
+      <div class="filter-chip" onclick="showToast('🔄 正在切换排序...')">⭐ 评分最高</div>
+      <div class="filter-chip" onclick="showToast('🔄 正在切换排序...')">💬 评论最多</div>
+      <div class="filter-chip" onclick="showToast('🔄 正在切换排序...')">📍 距离最近</div>
+      <div class="filter-chip" onclick="showToast('🔄 正在切换排序...')">📺 影片最多</div>
+    </div>
+
+    <div style="padding: 8px 16px 4px; font-size: 13px; color: #888;">
+      🤖 AI 聚合 <strong style="color:#FF6B35;">5个平台</strong> · 找到 <strong style="color:#111;">23家</strong> 炒粿条 · 📍 Bukit Bintang 附近
+    </div>
+
+    <div class="scroll-area">
+      <div class="results-list">
+
+        <!-- Rank 1 -->
+        <div class="rank-card" onclick="goToDetail(0)">
+          <div class="rank-num gold">1</div>
+          <div class="rank-img" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2);">🍜</div>
+          <div class="rank-info">
+            <div style="padding-right: 60px;">
+              <div class="rank-name">阿发炒粿条 Ah Huat CKT</div>
+              <div class="rank-meta">📍 Jalan Alor · 280m · RM 6-12</div>
+            </div>
+            <div class="platform-scores">
+              <div class="plat-badge google"><span class="badge-icon">🟢</span> G 4.8</div>
+              <div class="plat-badge redbook"><span class="badge-icon">📕</span> 4.9</div>
+              <div class="plat-badge tiktok"><span class="badge-icon">🎵</span> 4.7</div>
+              <div class="plat-badge yt"><span class="badge-icon">📺</span> 4.8</div>
+              <div class="plat-badge klfoodie"><span class="badge-icon">🍽️</span> 4.9</div>
+            </div>
+          </div>
+          <div class="rank-score-big">
+            <div class="score-circle">4.8</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px; text-align:center;">综合</div>
+          </div>
+        </div>
+
+        <!-- Rank 2 -->
+        <div class="rank-card" onclick="goToDetail(1)">
+          <div class="rank-num silver">2</div>
+          <div class="rank-img" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">🍳</div>
+          <div class="rank-info">
+            <div style="padding-right: 60px;">
+              <div class="rank-name">大排档炒粿条</div>
+              <div class="rank-meta">📍 Petaling Street · 1.2km · RM 5-10</div>
+            </div>
+            <div class="platform-scores">
+              <div class="plat-badge google"><span class="badge-icon">🟢</span> G 4.7</div>
+              <div class="plat-badge redbook"><span class="badge-icon">📕</span> 4.6</div>
+              <div class="plat-badge tiktok"><span class="badge-icon">🎵</span> 4.8</div>
+              <div class="plat-badge klfoodie"><span class="badge-icon">🍽️</span> 4.7</div>
+            </div>
+          </div>
+          <div class="rank-score-big">
+            <div class="score-circle" style="background: linear-gradient(135deg, #B0B8C1, #8090A0);">4.7</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px; text-align:center;">综合</div>
+          </div>
+        </div>
+
+        <!-- Rank 3 -->
+        <div class="rank-card" onclick="goToDetail(2)">
+          <div class="rank-num bronze">3</div>
+          <div class="rank-img" style="background: linear-gradient(135deg, #FFF8E1, #FFECB3);">🔥</div>
+          <div class="rank-info">
+            <div style="padding-right: 60px;">
+              <div class="rank-name">炭火炒粿条专家</div>
+              <div class="rank-meta">📍 Imbi Market · 900m · RM 8-15</div>
+            </div>
+            <div class="platform-scores">
+              <div class="plat-badge google"><span class="badge-icon">🟢</span> G 4.6</div>
+              <div class="plat-badge tiktok"><span class="badge-icon">🎵</span> 4.7</div>
+              <div class="plat-badge yt"><span class="badge-icon">📺</span> 4.8</div>
+            </div>
+          </div>
+          <div class="rank-score-big">
+            <div class="score-circle" style="background: linear-gradient(135deg, #C47B4E, #A05030);">4.6</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px; text-align:center;">综合</div>
+          </div>
+        </div>
+
+        <!-- Rank 4 -->
+        <div class="rank-card" onclick="showToast('🔧 这家餐厅页面即将上线')">
+          <div class="rank-num">4</div>
+          <div class="rank-img" style="background: linear-gradient(135deg, #F3E5F5, #E1BEE7);">🌙</div>
+          <div class="rank-info">
+            <div style="padding-right: 60px;">
+              <div class="rank-name">夜市炒粿条老伯</div>
+              <div class="rank-meta">📍 Lorong Tuanku Abdul Halim · 2.1km</div>
+            </div>
+            <div class="platform-scores">
+              <div class="plat-badge google"><span class="badge-icon">🟢</span> G 4.5</div>
+              <div class="plat-badge redbook"><span class="badge-icon">📕</span> 4.4</div>
+            </div>
+          </div>
+          <div class="rank-score-big">
+            <div class="score-circle" style="background: linear-gradient(135deg, #9e9e9e, #757575);">4.5</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px; text-align:center;">综合</div>
+          </div>
+        </div>
+
+        <!-- Rank 5 -->
+        <div class="rank-card" onclick="showToast('🔧 这家餐厅页面即将上线')">
+          <div class="rank-num">5</div>
+          <div class="rank-img" style="background: linear-gradient(135deg, #E0F2F1, #B2DFDB);">🦐</div>
+          <div class="rank-info">
+            <div style="padding-right: 60px;">
+              <div class="rank-name">虾膏炒粿条·传统味</div>
+              <div class="rank-meta">📍 Chow Kit · 3.0km · RM 7-12</div>
+            </div>
+            <div class="platform-scores">
+              <div class="plat-badge tiktok"><span class="badge-icon">🎵</span> 4.5</div>
+              <div class="plat-badge yt"><span class="badge-icon">📺</span> 4.4</div>
+              <div class="plat-badge klfoodie"><span class="badge-icon">🍽️</span> 4.6</div>
+            </div>
+          </div>
+          <div class="rank-score-big">
+            <div class="score-circle" style="background: linear-gradient(135deg, #9e9e9e, #757575);">4.4</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px; text-align:center;">综合</div>
+          </div>
+        </div>
+
+        <div style="text-align:center; padding: 16px; color: #bbb; font-size: 13px;">显示第 1-5 名 · 共 23 家</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: DETAIL ==================== -->
+  <div class="screen" id="screen-detail">
+    <div class="nav-bar" style="position: absolute; top: 44px; z-index: 10; width: 100%;">
+      <button class="nav-back" onclick="goBack()" style="background: rgba(255,255,255,0.9);">←</button>
+      <div style="flex:1;"></div>
+      <button class="nav-back" onclick="showToast('❤️ 已收藏！')" style="background: rgba(255,255,255,0.9); font-size: 20px;">♡</button>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-hero" id="detail-hero">
+        🍜
+        <div class="detail-hero-overlay"></div>
+      </div>
+
+      <div class="detail-top">
+        <div class="detail-name" id="detail-name">阿发炒粿条 Ah Huat CKT</div>
+        <div class="detail-meta" id="detail-meta">📍 Jalan Alor, Bukit Bintang · 280m · 🕐 11:00 - 23:00 · RM 6-12</div>
+
+        <!-- Aggregate score -->
+        <div class="aggregate-score-row">
+          <div class="agg-score" id="detail-score">4.8</div>
+          <div class="agg-right">
+            <div class="agg-label">🤖 AI 综合评分</div>
+            <div class="agg-stars">★★★★★</div>
+            <div class="agg-count">来自 5 大平台 · 1,247 条评论</div>
+          </div>
+        </div>
+
+        <!-- Platform breakdown -->
+        <div style="font-size: 14px; font-weight: 800; color: #333; margin-bottom: 12px;">各平台评分</div>
+        <div class="platform-breakdown" style="padding: 0; background: #f7f7f9; border-radius: 16px; overflow: hidden;">
+          <div class="plat-row" style="padding: 12px 14px;">
+            <div class="plat-icon-big" style="background: #e8f5e9;">🟢</div>
+            <div class="plat-name">Google Reviews</div>
+            <div class="plat-count">423条</div>
+            <div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:96%; background: linear-gradient(90deg,#34a853,#4CAF50);"></div></div>
+            <div class="plat-score-val" style="color:#34a853;">4.8</div>
+          </div>
+          <div class="plat-row" style="padding: 12px 14px; border-top: 1px solid #efefef;">
+            <div class="plat-icon-big" style="background: #fff0f0;">📕</div>
+            <div class="plat-name">小红书</div>
+            <div class="plat-count">89篇</div>
+            <div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:98%; background: linear-gradient(90deg,#e53935,#ff5252);"></div></div>
+            <div class="plat-score-val" style="color:#e53935;">4.9</div>
+          </div>
+          <div class="plat-row" style="padding: 12px 14px; border-top: 1px solid #efefef;">
+            <div class="plat-icon-big" style="background: #f0f0ff;">🎵</div>
+            <div class="plat-name">TikTok</div>
+            <div class="plat-count">156个视频</div>
+            <div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:94%; background: linear-gradient(90deg,#69C9D0,#EE1D52);"></div></div>
+            <div class="plat-score-val" style="color:#EE1D52;">4.7</div>
+          </div>
+          <div class="plat-row" style="padding: 12px 14px; border-top: 1px solid #efefef;">
+            <div class="plat-icon-big" style="background: #fff3e0;">📺</div>
+            <div class="plat-name">YouTube</div>
+            <div class="plat-count">42个视频</div>
+            <div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:96%; background: linear-gradient(90deg,#FF0000,#FF5722);"></div></div>
+            <div class="plat-score-val" style="color:#FF0000;">4.8</div>
+          </div>
+          <div class="plat-row" style="padding: 12px 14px; border-top: 1px solid #efefef;">
+            <div class="plat-icon-big" style="background: #f3e5f5;">🍽️</div>
+            <div class="plat-name">KLFoodie</div>
+            <div class="plat-count">537条</div>
+            <div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:98%; background: linear-gradient(90deg,#9c27b0,#e040fb);"></div></div>
+            <div class="plat-score-val" style="color:#9c27b0;">4.9</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- YouTube videos -->
+      <div class="section-header">📺 YouTube 视频 (42)</div>
+      <div class="yt-scroll">
+        <div class="yt-card" onclick="showToast('📺 即将跳转到 YouTube...')">
+          <div class="yt-thumb">🍜</div>
+          <div class="yt-play-btn">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">【KL美食】Jalan Alor最好吃的炒粿条！必试！</div>
+            <div class="yt-channel">🔴 KLFoodHunter · 128K views</div>
+          </div>
+        </div>
+        <div class="yt-card" onclick="showToast('📺 即将跳转到 YouTube...')">
+          <div class="yt-thumb" style="font-size: 50px;">🔥</div>
+          <div class="yt-play-btn">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">吉隆坡炒粿条Top 5 排行！阿发赢了吗？</div>
+            <div class="yt-channel">🔴 Malaysia Foodie · 89K views</div>
+          </div>
+        </div>
+        <div class="yt-card" onclick="showToast('📺 即将跳转到 YouTube...')">
+          <div class="yt-thumb" style="font-size: 50px;">🌙</div>
+          <div class="yt-play-btn">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Char Kway Teow - KL's Best Street Food Review</div>
+            <div class="yt-channel">🔴 EatWithWi · 54K views</div>
+          </div>
+        </div>
+        <div class="yt-card" onclick="showToast('📺 即将跳转到 YouTube...')">
+          <div class="yt-thumb" style="font-size: 50px;">🦐</div>
+          <div class="yt-play-btn">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">炭火炒粿条 vs 电炉炒粿条，你更爱哪个？</div>
+            <div class="yt-channel">🔴 Food Critic MY · 31K views</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- TikTok section -->
+      <div class="section-header">🎵 TikTok 视频 (156)</div>
+      <div class="tiktok-scroll">
+        <div class="tiktok-card" onclick="showToast('🎵 即将跳转到 TikTok...')">
+          <div class="tiktok-thumb" style="background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);">
+            🍜
+            <div class="tiktok-overlay">
+              <div class="tiktok-views">👁 2.1M</div>
+              <div class="tiktok-user">@klfoodhunter</div>
+            </div>
+          </div>
+        </div>
+        <div class="tiktok-card" onclick="showToast('🎵 即将跳转到 TikTok...')">
+          <div class="tiktok-thumb" style="background: linear-gradient(135deg, #2d1b69, #11998e, #38ef7d);">
+            🔥
+            <div class="tiktok-overlay">
+              <div class="tiktok-views">👁 890K</div>
+              <div class="tiktok-user">@malayfood</div>
+            </div>
+          </div>
+        </div>
+        <div class="tiktok-card" onclick="showToast('🎵 即将跳转到 TikTok...')">
+          <div class="tiktok-thumb" style="background: linear-gradient(135deg, #f7971e, #ffd200);">
+            🍳
+            <div class="tiktok-overlay">
+              <div class="tiktok-views">👁 543K</div>
+              <div class="tiktok-user">@foodiemy</div>
+            </div>
+          </div>
+        </div>
+        <div class="tiktok-card" onclick="showToast('🎵 即将跳转到 TikTok...')">
+          <div class="tiktok-thumb" style="background: linear-gradient(135deg, #fc4a1a, #f7b733);">
+            🦐
+            <div class="tiktok-overlay">
+              <div class="tiktok-views">👁 310K</div>
+              <div class="tiktok-user">@eatmsia</div>
+            </div>
+          </div>
+        </div>
+        <div class="tiktok-card" onclick="showToast('🎵 即将跳转到 TikTok...')">
+          <div class="tiktok-thumb" style="background: linear-gradient(135deg, #a8c0ff, #3f2b96);">
+            🌙
+            <div class="tiktok-overlay">
+              <div class="tiktok-views">👁 228K</div>
+              <div class="tiktok-user">@nightfood</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 小红书 section -->
+      <div class="section-header">📕 小红书笔记 (89)</div>
+      <div class="xhs-grid">
+        <div class="xhs-card" onclick="showToast('📕 即将跳转到小红书...')">
+          <div class="xhs-img" style="background: linear-gradient(135deg, #FF6B6B, #FFB347);">🍜</div>
+          <div class="xhs-body">
+            <div class="xhs-title">在KL找到人生中最好吃的炒粿条！！这家必吃😭</div>
+            <div class="xhs-user">👤 美食探索家 liling</div>
+            <div class="xhs-likes">❤️ 3,421</div>
+          </div>
+        </div>
+        <div class="xhs-card" onclick="showToast('📕 即将跳转到小红书...')">
+          <div class="xhs-img" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">🔥</div>
+          <div class="xhs-body">
+            <div class="xhs-title">吉隆坡炒粿条测评！附近10家全部试了</div>
+            <div class="xhs-user">👤 KL觅食小队</div>
+            <div class="xhs-likes">❤️ 2,198</div>
+          </div>
+        </div>
+        <div class="xhs-card" onclick="showToast('📕 即将跳转到小红书...')">
+          <div class="xhs-img" style="background: linear-gradient(135deg, #f6d365, #fda085);">⭐</div>
+          <div class="xhs-body">
+            <div class="xhs-title">炭火炒粿条 vs 普通炒粿条区别在哪？</div>
+            <div class="xhs-user">👤 foodie_kl</div>
+            <div class="xhs-likes">❤️ 1,567</div>
+          </div>
+        </div>
+        <div class="xhs-card" onclick="showToast('📕 即将跳转到小红书...')">
+          <div class="xhs-img" style="background: linear-gradient(135deg, #89f7fe, #66a6ff);">🦐</div>
+          <div class="xhs-body">
+            <div class="xhs-title">点单攻略：炒粿条这样点才正确！</div>
+            <div class="xhs-user">👤 馋嘴美食</div>
+            <div class="xhs-likes">❤️ 987</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Google Reviews -->
+      <div class="section-header">🟢 Google 评论 (423)</div>
+      <div class="review-list">
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-avatar">W</div>
+            <div>
+              <div class="reviewer-name">Wei Liang</div>
+              <div class="reviewer-plat">🟢 Google Reviews · 本地向导 ⭐</div>
+            </div>
+            <div class="review-stars">★★★★★</div>
+          </div>
+          <div class="review-text">炭火炒出来的味道完全不同！锅气十足，干湿适中。虾子新鲜，叫猪肠粉的话记得加辣。等位大概15分钟，值得！</div>
+          <div style="margin-top: 8px;">
+            <span class="review-tag" style="background:#fff3e0; color:#e65100;">🔥 锅气足</span>
+            <span class="review-tag" style="background:#e8f5e9; color:#2e7d32;">🦐 虾子新鲜</span>
+          </div>
+          <div class="review-date">2周前</div>
+        </div>
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-avatar" style="background: linear-gradient(135deg, #4CAF50, #2e7d32);">S</div>
+            <div>
+              <div class="reviewer-name">Sarah Tan</div>
+              <div class="reviewer-plat">🟢 Google Reviews</div>
+            </div>
+            <div class="review-stars">★★★★★</div>
+          </div>
+          <div class="review-text">Hands down the best CKT in KL! The wok hei is amazing. Comes perfectly with the right amount of char. Must order extra cockles!</div>
+          <div class="review-date">1个月前</div>
+        </div>
+      </div>
+
+      <!-- KLFoodie Reviews -->
+      <div class="section-header">🍽️ KLFoodie 评分 (537)</div>
+      <div class="review-list">
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-avatar" style="background: linear-gradient(135deg, #9c27b0, #e040fb);">K</div>
+            <div>
+              <div class="reviewer-name">KLFoodie 编辑精选</div>
+              <div class="reviewer-plat">🍽️ KLFoodie · 官方推荐</div>
+            </div>
+            <div class="review-stars" style="color: #9c27b0;">★★★★★</div>
+          </div>
+          <div class="review-text">连续3年荣获KLFoodie炒粿条组别冠军！阿发叔坚持用炭火大火炒制，是KL少数保留传统工艺的摊档之一。强烈推荐加蛋！</div>
+          <div style="margin-top: 8px;">
+            <span class="review-tag" style="background:#f3e5f5; color:#7b1fa2;">🏆 年度冠军</span>
+            <span class="review-tag" style="background:#f3e5f5; color:#7b1fa2;">🔥 传统炭火</span>
+          </div>
+          <div class="review-date">KLFoodie 2024</div>
+        </div>
+      </div>
+
+      <button class="open-app-btn" onclick="showToast('🗺️ 正在打开 Google Maps 导航...')">
+        🗺️ 导航去这里
+      </button>
+    </div>
+  </div>
+
+</div><!-- end phone -->
+
+<script>
+  let currentScreen = 'home';
+  let screenHistory = [];
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    currentScreen = id;
+  }
+
+  function goBack() {
+    if (screenHistory.length > 0) {
+      const prev = screenHistory.pop();
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + prev).classList.add('active');
+      currentScreen = prev;
+    }
+  }
+
+  function goToSearch(query) {
+    screenHistory.push(currentScreen);
+    if (query) {
+      document.getElementById('search-input').value = query;
+      document.getElementById('search-title').textContent = query + ' 排行榜';
+      // Show loading
+      doSearch();
+    } else {
+      showScreen('search');
+    }
+  }
+
+  function doSearch() {
+    const query = document.getElementById('search-input').value || '炒粿条';
+    document.getElementById('search-title').textContent = query + ' 排行榜';
+
+    const loadingEl = document.getElementById('search-loading');
+    const scanText = document.getElementById('ai-scan-text');
+    loadingEl.style.display = 'flex';
+
+    const steps = [
+      '🔍 扫描 Google Reviews...',
+      '📕 爬取小红书数据...',
+      '🎵 分析 TikTok 视频...',
+      '📺 搜索 YouTube 影片...',
+      '🍽️ 整合 KLFoodie 评分...',
+      '🤖 AI 计算综合评分...',
+    ];
+
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < steps.length) {
+        scanText.textContent = steps[i];
+        i++;
+      } else {
+        clearInterval(interval);
+        loadingEl.classList.add('fade-out');
+        setTimeout(() => {
+          loadingEl.style.display = 'none';
+          loadingEl.classList.remove('fade-out');
+          showScreen('search');
+        }, 400);
+      }
+    }, 350);
+  }
+
+  const restaurants = [
+    { name: '阿发炒粿条 Ah Huat CKT', meta: '📍 Jalan Alor, Bukit Bintang · 280m · 🕐 11:00–23:00 · RM 6-12', score: '4.8', emoji: '🍜' },
+    { name: '大排档炒粿条', meta: '📍 Petaling Street · 1.2km · 🕐 07:00–14:00 · RM 5-10', score: '4.7', emoji: '🍳' },
+    { name: '炭火炒粿条专家', meta: '📍 Imbi Market · 900m · 🕐 18:00–24:00 · RM 8-15', score: '4.6', emoji: '🔥' },
+  ];
+
+  function goToDetail(index) {
+    screenHistory.push(currentScreen);
+    const r = restaurants[index] || restaurants[0];
+    document.getElementById('detail-name').textContent = r.name;
+    document.getElementById('detail-meta').textContent = r.meta;
+    document.getElementById('detail-score').textContent = r.score;
+    document.getElementById('detail-hero').childNodes[0].textContent = r.emoji;
+    showScreen('detail');
+    // Scroll to top
+    document.getElementById('screen-detail').querySelector('.detail-body').scrollTop = 0;
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+</script>
+</body>
+</html>

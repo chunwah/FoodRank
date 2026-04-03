@@ -1,0 +1,15 @@
+{
+  "appId": "com.foodrank.app",
+  "appName": "FoodRank",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#FF6B35",
+      "showSpinner": false
+    }
+  }
+}
