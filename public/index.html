@@ -189,39 +189,39 @@
 
       <div class="section-title" id="home-hot-title">🔥 热搜美食</div>
       <div class="category-row" id="home-chips">
-        <div class="cat-chip" onclick="quickSearch('炒粿条', '🍜')">🍜 <span class="chip-label">炒粿条</span></div>
-        <div class="cat-chip" onclick="quickSearch('叉烧饭', '🍖')">🍖 <span class="chip-label">叉烧饭</span></div>
-        <div class="cat-chip" onclick="quickSearch('肉骨茶', '🥩')">🥩 <span class="chip-label">肉骨茶</span></div>
-        <div class="cat-chip" onclick="quickSearch('云吞面', '🍝')">🍝 <span class="chip-label">云吞面</span></div>
-        <div class="cat-chip" onclick="quickSearch('沙爹', '🍢')">🍢 <span class="chip-label">沙爹</span></div>
-        <div class="cat-chip" onclick="quickSearch('椰浆饭', '🍛')">🍛 <span class="chip-label">椰浆饭</span></div>
-        <div class="cat-chip" onclick="quickSearch('霸王别姬', '🦀')">🦀 <span class="chip-label">螃蟹</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(0)">🍜 <span class="chip-label">炒粿条</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(1)">🍖 <span class="chip-label">叉烧饭</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(2)">🥩 <span class="chip-label">肉骨茶</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(3)">🍝 <span class="chip-label">云吞面</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(4)">🍢 <span class="chip-label">沙爹</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(5)">🍛 <span class="chip-label">椰浆饭</span></div>
+        <div class="cat-chip" onclick="quickSearchByIndex(6)">🦀 <span class="chip-label">螃蟹</span></div>
       </div>
 
       <div class="section-title" id="home-explore-title">📊 马上探索</div>
       <div class="featured-row">
-        <div class="feat-card" onclick="quickSearch('炒粿条', '🍜')">
+        <div class="feat-card" onclick="quickSearchByIndex(0)">
           <div class="feat-img" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2);">🍜</div>
           <div class="feat-info">
             <div class="feat-name feat-name-0">炒粿条</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
-        <div class="feat-card" onclick="quickSearch('叉烧饭', '🍖')">
+        <div class="feat-card" onclick="quickSearchByIndex(1)">
           <div class="feat-img" style="background: linear-gradient(135deg, #FCE4EC, #F8BBD9);">🍖</div>
           <div class="feat-info">
             <div class="feat-name feat-name-1">叉烧饭</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
-        <div class="feat-card" onclick="quickSearch('肉骨茶', '🥩')">
+        <div class="feat-card" onclick="quickSearchByIndex(2)">
           <div class="feat-img" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">🥩</div>
           <div class="feat-info">
             <div class="feat-name feat-name-2">肉骨茶</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
-        <div class="feat-card" onclick="quickSearch('云吞面', '🍝')">
+        <div class="feat-card" onclick="quickSearchByIndex(3)">
           <div class="feat-img" style="background: linear-gradient(135deg, #E3F2FD, #BBDEFB);">🍝</div>
           <div class="feat-info">
             <div class="feat-name feat-name-3">云吞面</div>
@@ -381,6 +381,15 @@ const LANG = {
     analyzing: '好的！根据你的选择...\n我帮你分析完毕 🎯',
     rainyHotpot: '下雨天嘛，不如直接吃火锅？还是你有其他想法？',
     favComing: '❤️ 收藏功能开发中', meComing: '👤 个人页面开发中',
+    foodItems: [
+      { label:'炒粿条', search:'炒粿条', emoji:'🍜' },
+      { label:'叉烧饭', search:'叉烧饭', emoji:'🍖' },
+      { label:'肉骨茶', search:'肉骨茶', emoji:'🥩' },
+      { label:'云吞面', search:'云吞面', emoji:'🍝' },
+      { label:'沙爹',   search:'沙爹',   emoji:'🍢' },
+      { label:'椰浆饭', search:'椰浆饭', emoji:'🍛' },
+      { label:'螃蟹',   search:'霸王别姬', emoji:'🦀' },
+    ],
     chipLabels: ['炒粿条','叉烧饭','肉骨茶','云吞面','沙爹','椰浆饭','螃蟹'],
     featNames: ['炒粿条','叉烧饭','肉骨茶','云吞面'],
     mealTimes: ['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'],
@@ -419,6 +428,15 @@ const LANG = {
     analyzing: 'Got it! Based on your answers...\nAnalysis complete 🎯',
     rainyHotpot: "Rainy day! How about hotpot to warm up? Or something else?",
     favComing: '❤️ Saved feature coming soon', meComing: '👤 Profile coming soon',
+    foodItems: [
+      { label:'Char Kuey Teow', search:'Char Kuey Teow', emoji:'🍜' },
+      { label:'Char Siu Rice',  search:'Char Siu Rice',  emoji:'🍖' },
+      { label:'Bak Kut Teh',    search:'Bak Kut Teh',    emoji:'🥩' },
+      { label:'Wonton Noodles', search:'Wonton Noodles', emoji:'🍝' },
+      { label:'Satay',          search:'Satay',           emoji:'🍢' },
+      { label:'Nasi Lemak',     search:'Nasi Lemak',     emoji:'🍛' },
+      { label:'Crab',           search:'Crab',            emoji:'🦀' },
+    ],
     chipLabels: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles','Satay','Nasi Lemak','Crab'],
     featNames: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles'],
     mealTimes: ['🌅 Breakfast','☀️ Lunch','🌤️ Afternoon Tea','🌙 Dinner','🌃 Supper'],
@@ -473,6 +491,9 @@ function applyLang() {
   document.getElementById('chip-rating').textContent = L.sortRating;
   document.getElementById('chip-distance').textContent = L.sortDistance;
   document.getElementById('chip-reviews').textContent = L.sortReviews;
+  // Default search input value
+  const si2 = document.getElementById('search-input');
+  if (si2 && searchResults.length === 0) si2.value = L.foodItems[0].search;
   // Loading text
   const lm = document.getElementById('loading-main-text');
   if (lm) lm.textContent = L.loadingMain;
@@ -959,6 +980,12 @@ function quickSearch(food, emoji) {
   screenHistory.push(currentScreen);
   showScreen('search');
   doSearch();
+}
+
+function quickSearchByIndex(i) {
+  const item = t('foodItems')[i];
+  if (!item) return;
+  quickSearch(item.search, item.emoji);
 }
 
 // ============================================================
