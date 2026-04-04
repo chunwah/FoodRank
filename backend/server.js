@@ -863,7 +863,6 @@ app.post('/api/ai-recommend', async (req, res) => {
   2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。`;
 
 console.log("给Gemini的prompt:", prompt);
-listAvailableModels();
 const callGemini = async (prompt) => {
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
     throw new Error('请求失败：必须提供有效的文本 prompt');
@@ -872,7 +871,7 @@ const callGemini = async (prompt) => {
   try {
     const response = await axios.post(
       // 确认你使用的是稳定版模型
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${GEMINI_API_KEY}`,
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
@@ -956,34 +955,6 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-
-async function listAvailableModels() {
-  try {
-    const response = await axios.get(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-    );
-    
-    console.log("✅ 你当前可用的文本生成模型 (支持 generateContent) 有：\n");
-    
-    // 过滤出支持文本生成的模型
-    const textModels = response.data.models.filter(m => 
-      m.supportedGenerationMethods.includes('generateContent')
-    );
-
-    textModels.forEach(model => {
-      // 打印出底层 ID 和对应的 UI 名字
-      console.log(`📌 底层 ID: ${model.name.replace('models/', '')}`);
-      console.log(`   界面显示: ${model.displayName}`);
-      console.log('-----------------------------------');
-    });
-
-  } catch (error) {
-    console.error("查询失败:", error.response?.data || error.message);
-  }
-}
-
-
 
 // ============================================================
 // HELPER: Get Place Details from Google Places API (New)
