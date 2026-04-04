@@ -871,10 +871,10 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
 
   const callGemini = async () => {
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 300 }
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 512 }
       }
     );
     const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -889,9 +889,9 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
       rec = await callGemini();
     } catch (err) {
       if (err.response?.status === 429) {
-        // Rate limited — wait 3s and retry once
-        console.log('⚠️ Gemini rate limited, retrying in 3s...');
-        await new Promise(r => setTimeout(r, 3000));
+        // Rate limited — wait 10s and retry once
+        console.log('⚠️ Gemini rate limited, retrying in 10s...');
+        await new Promise(r => setTimeout(r, 10000));
         rec = await callGemini();
       } else {
         throw err;
@@ -899,9 +899,11 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
     }
     res.json({ success: true, food: rec.food, emoji: rec.emoji, reason: rec.reason });
   } catch (err) {
-    console.error('❌ Gemini error:', err.response?.status, err.message);
+    const status = err.response?.status;
+    const detail = err.response?.data?.error?.message || err.message;
+    console.error(`❌ Gemini error: ${status}`, detail);
     // Return 503 so frontend knows to fallback gracefully
-    res.status(503).json({ error: 'AI 推荐暂时不可用', fallback: true });
+    res.status(503).json({ error: 'AI 推荐暂时不可用', fallback: true, detail });
   }
 });
 
