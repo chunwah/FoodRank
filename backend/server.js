@@ -630,7 +630,7 @@ app.get('/api/tiktok', async (req, res) => {
 
   try {
     // Tier 1: exact restaurant name on TikTok
-    let videos = await searchTikTok(`"${searchName}" ${city}`.trim());
+    let videos = (await searchTikTok(`"${searchName}" ${city}`.trim())).slice(0, 3);
 
     // Tier 2: if few results, try food type + city
     if (videos.length < 3 && food && city) {
@@ -638,7 +638,7 @@ app.get('/api/tiktok', async (req, res) => {
       const areaVideos = await searchTikTok(`${food} ${city}`);
       // Mark area results so UI can show a badge
       areaVideos.forEach(v => v.matchType = 'area');
-      videos = [...videos, ...areaVideos].slice(0, 8);
+      videos = [...videos, ...areaVideos].slice(0, 3);
     }
 
     console.log(`✅ TikTok 最终找到 ${videos.length} 个视频`);
@@ -770,7 +770,7 @@ async function searchYouTube(query, regionCode = 'MY') {
       q: query,
       part: 'snippet',
       type: 'video',
-      maxResults: 10,
+      maxResults: 3,
       regionCode,
       // No category or language filter — food videos span all categories
       // and KL/SEA content is a mix of Chinese, English, Malay
