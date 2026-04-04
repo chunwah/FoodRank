@@ -427,7 +427,7 @@ app.get('/api/instagram', async (req, res) => {
       areaItems.forEach(i => { if (!seen.has(i.link)) items.push(i); });
     }
 
-    items = items.slice(0, 8);
+    items = items.slice(0, 5);
     console.log(`✅ Instagram 找到 ${items.length} 条帖子`);
 
     // Sentiment from caption/snippet
@@ -558,6 +558,7 @@ app.get('/api/klfoodie', async (req, res) => {
       ? parseFloat((scored.reduce((s, i) => s + i.rating, 0) / scored.length).toFixed(1))
       : null;
 
+    items = items.slice(0, 3);
     console.log(`✅ KLFoodie 找到 ${items.length} 条结果，平均评分: ${avgRating || 'N/A'}`);
     res.json({ posts: items, avgRating, total: items.length });
 
