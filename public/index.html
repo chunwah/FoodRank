@@ -188,14 +188,14 @@
       </div>
 
       <div class="section-title" id="home-hot-title">🔥 热搜美食</div>
-      <div class="category-row">
-        <div class="cat-chip" onclick="quickSearch('炒粿条', '🍜')">🍜 炒粿条</div>
-        <div class="cat-chip" onclick="quickSearch('叉烧饭', '🍖')">🍖 叉烧饭</div>
-        <div class="cat-chip" onclick="quickSearch('肉骨茶', '🥩')">🥩 肉骨茶</div>
-        <div class="cat-chip" onclick="quickSearch('云吞面', '🍝')">🍝 云吞面</div>
-        <div class="cat-chip" onclick="quickSearch('沙爹', '🍢')">🍢 沙爹</div>
-        <div class="cat-chip" onclick="quickSearch('椰浆饭', '🍛')">🍛 椰浆饭</div>
-        <div class="cat-chip" onclick="quickSearch('霸王别姬', '🦀')">🦀 螃蟹</div>
+      <div class="category-row" id="home-chips">
+        <div class="cat-chip" onclick="quickSearch('炒粿条', '🍜')">🍜 <span class="chip-label">炒粿条</span></div>
+        <div class="cat-chip" onclick="quickSearch('叉烧饭', '🍖')">🍖 <span class="chip-label">叉烧饭</span></div>
+        <div class="cat-chip" onclick="quickSearch('肉骨茶', '🥩')">🥩 <span class="chip-label">肉骨茶</span></div>
+        <div class="cat-chip" onclick="quickSearch('云吞面', '🍝')">🍝 <span class="chip-label">云吞面</span></div>
+        <div class="cat-chip" onclick="quickSearch('沙爹', '🍢')">🍢 <span class="chip-label">沙爹</span></div>
+        <div class="cat-chip" onclick="quickSearch('椰浆饭', '🍛')">🍛 <span class="chip-label">椰浆饭</span></div>
+        <div class="cat-chip" onclick="quickSearch('霸王别姬', '🦀')">🦀 <span class="chip-label">螃蟹</span></div>
       </div>
 
       <div class="section-title" id="home-explore-title">📊 马上探索</div>
@@ -203,28 +203,28 @@
         <div class="feat-card" onclick="quickSearch('炒粿条', '🍜')">
           <div class="feat-img" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2);">🍜</div>
           <div class="feat-info">
-            <div class="feat-name">炒粿条</div>
+            <div class="feat-name feat-name-0">炒粿条</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
         <div class="feat-card" onclick="quickSearch('叉烧饭', '🍖')">
           <div class="feat-img" style="background: linear-gradient(135deg, #FCE4EC, #F8BBD9);">🍖</div>
           <div class="feat-info">
-            <div class="feat-name">叉烧饭</div>
+            <div class="feat-name feat-name-1">叉烧饭</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
         <div class="feat-card" onclick="quickSearch('肉骨茶', '🥩')">
           <div class="feat-img" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">🥩</div>
           <div class="feat-info">
-            <div class="feat-name">肉骨茶</div>
+            <div class="feat-name feat-name-2">肉骨茶</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
         <div class="feat-card" onclick="quickSearch('云吞面', '🍝')">
           <div class="feat-img" style="background: linear-gradient(135deg, #E3F2FD, #BBDEFB);">🍝</div>
           <div class="feat-info">
-            <div class="feat-name">云吞面</div>
+            <div class="feat-name feat-name-3">云吞面</div>
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
@@ -381,6 +381,8 @@ const LANG = {
     analyzing: '好的！根据你的选择...\n我帮你分析完毕 🎯',
     rainyHotpot: '下雨天嘛，不如直接吃火锅？还是你有其他想法？',
     favComing: '❤️ 收藏功能开发中', meComing: '👤 个人页面开发中',
+    chipLabels: ['炒粿条','叉烧饭','肉骨茶','云吞面','沙爹','椰浆饭','螃蟹'],
+    featNames: ['炒粿条','叉烧饭','肉骨茶','云吞面'],
     mealTimes: ['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'],
     aiQuestions: [
       { id:'mood', text:'你今天的心情怎样？', options:['😄 开心，想庆祝','😌 平静，随便吃','😩 累了，要补一补','🌶️ 想吃点刺激的'] },
@@ -417,6 +419,8 @@ const LANG = {
     analyzing: 'Got it! Based on your answers...\nAnalysis complete 🎯',
     rainyHotpot: "Rainy day! How about hotpot to warm up? Or something else?",
     favComing: '❤️ Saved feature coming soon', meComing: '👤 Profile coming soon',
+    chipLabels: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles','Satay','Nasi Lemak','Crab'],
+    featNames: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles'],
     mealTimes: ['🌅 Breakfast','☀️ Lunch','🌤️ Afternoon Tea','🌙 Dinner','🌃 Supper'],
     aiQuestions: [
       { id:'mood', text:'How are you feeling today?', options:['😄 Happy, want to celebrate','😌 Chill, anything goes','😩 Tired, need energy','🌶️ Feeling adventurous'] },
@@ -472,6 +476,14 @@ function applyLang() {
   // Loading text
   const lm = document.getElementById('loading-main-text');
   if (lm) lm.textContent = L.loadingMain;
+  // Food chip labels + featured card names
+  document.querySelectorAll('.chip-label').forEach((el, i) => {
+    if (L.chipLabels[i]) el.textContent = L.chipLabels[i];
+  });
+  L.featNames.forEach((name, i) => {
+    const el = document.querySelector('.feat-name-' + i);
+    if (el) el.textContent = name;
+  });
   // AI screen
   const at = document.getElementById('ai-screen-title');
   if (at) at.textContent = L.aiTitle;

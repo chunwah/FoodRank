@@ -884,7 +884,7 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
 {"food":"食物名称（中文）","emoji":"一个emoji","reason":"推荐理由（中文）"}`;
 
 console.log("给Gemini的prompt:", prompt);
-const callGemini = async (prompt) => {
+const callGemini = async (prompt, lang = 'zh') => {
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
     throw new Error('请求失败：必须提供有效的文本 prompt');
   }
@@ -900,11 +900,11 @@ const callGemini = async (prompt) => {
           maxOutputTokens: 2048, 
           responseMimeType: "application/json",
           responseSchema: {
-            type: "OBJECT", 
+            type: "OBJECT",
             properties: {
-              food: { type: "STRING", description: "食物名称（中文）" },
-              emoji: { type: "STRING", description: "一个相关的emoji" },
-              reason: { type: "STRING", description: "推荐理由（中文，2-3句话）" }
+              food: { type: "STRING", description: lang === 'en' ? "Food dish name in English" : "食物名称（中文）" },
+              emoji: { type: "STRING", description: "One relevant emoji" },
+              reason: { type: "STRING", description: lang === 'en' ? "Recommendation reason in English, 2-3 sentences" : "推荐理由（中文，2-3句话）" }
             },
             required: ["food", "emoji", "reason"]
           }
@@ -944,13 +944,13 @@ const callGemini = async (prompt) => {
   try {
     let rec;
     try {
-      rec = await callGemini(prompt);
+      rec = await callGemini(prompt, lang);
     } catch (err) {
       if (err.response?.status === 429) {
         // Rate limited — wait 10s and retry once
         console.log('⚠️ Gemini rate limited, retrying in 10s...');
         await new Promise(r => setTimeout(r, 10000));
-        rec = await callGemini(prompt);
+        rec = await callGemini(prompt, lang);
       } else {
         throw err;
       }
