@@ -869,19 +869,44 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
   "reason": "推荐理由（中文，2-3句话）"
 }`;
 
-  const callGemini = async () => {
+const callGemini = async (prompt) => {
+  try {
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 512 }
+        generationConfig: { 
+          temperature: 0.8, 
+          maxOutputTokens: 512,
+          // 强烈建议加上这行，强制模型返回标准 JSON 格式
+          responseMimeType: "application/json" 
+        }
       }
     );
+
     const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Gemini 返回格式错误');
-    return JSON.parse(jsonMatch[0]);
-  };
+    
+    // 因为设置了 responseMimeType，这里通常可以直接 parse，不需要正则匹配了
+    try {
+      return JSON.parse(rawText);
+    } catch (parseError) {
+      console.error('JSON 解析失败，模型原始返回内容为:', rawText);
+      throw new Error('Gemini 返回的不是有效的 JSON 格式');
+    }
+
+  } catch (error) {
+    // 这里是关键：捕获并打印 API 返回的真实错误信息
+    if (error.response) {
+      console.error("API 报错状态码:", error.response.status);
+      console.error("API 报错详情:", JSON.stringify(error.response.data, null, 2));
+    } else if (error.request) {
+      console.error("网络请求失败 (请检查是否需要代理):", error.message);
+    } else {
+      console.error("代码执行错误:", error.message);
+    }
+    throw error;
+  }
+};
 
   try {
     let rec;
