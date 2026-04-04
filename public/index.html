@@ -473,11 +473,6 @@ function openAI() {
 // ============================================================
 const AI_QUESTIONS = [
   {
-    id: 'meal',
-    text: '你好！我是 FoodRank AI 🤖\n现在是什么时间段？',
-    options: ['🌅 早餐', '☀️ 午餐', '🌙 晚餐', '🌃 宵夜']
-  },
-  {
     id: 'mood',
     text: '你今天的心情怎样？',
     options: ['😄 开心，想庆祝', '😌 平静，随便吃', '😩 累了，要补一补', '🌶️ 想吃点刺激的']
@@ -499,14 +494,43 @@ const AI_QUESTIONS = [
   }
 ];
 
+// Auto-detect meal time from current hour
+function getMealTime() {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 11)  return '🌅 早餐';
+  if (h >= 11 && h < 15) return '☀️ 午餐';
+  if (h >= 15 && h < 18) return '🌤️ 下午茶';
+  if (h >= 18 && h < 22) return '🌙 晚餐';
+  return '🌃 宵夜';
+}
+
+// Fetch weather from Open-Meteo (free, no API key)
+async function fetchWeather(lat, lng) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weathercode,temperature_2m&timezone=auto`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const code = data.current?.weathercode ?? 0;
+    const temp = data.current?.temperature_2m ?? null;
+    // WMO weather codes: 51-67 = drizzle/rain, 71-77 = snow, 80-99 = showers/storm
+    const isRainy = (code >= 51 && code <= 67) || (code >= 80 && code <= 99);
+    const isCloudy = code >= 2 && code <= 3;
+    const isSunny = code === 0 || code === 1;
+    return { isRainy, isCloudy, isSunny, temp, code };
+  } catch (e) {
+    return { isRainy: false, isCloudy: false, isSunny: false, temp: null, code: 0 };
+  }
+}
+
 // Food recommendation matrix
-// Keys: meal-mood-base-flavor-budget combos → food name + emoji
 function getRecommendation(answers) {
-  const { meal, mood, base, flavor, budget } = answers;
+  const { mood, base, flavor, budget, meal, weather } = answers;
 
   // Rule-based recommendation
   const isMorning = meal.includes('早');
+  const isAfternoon = meal.includes('下午');
   const isLate = meal.includes('宵');
+  const isRainy = weather?.isRainy;
   const isRice = base.includes('饭');
   const isNoodle = base.includes('面') || base.includes('粿');
   const isPorridge = base.includes('粥');
@@ -520,6 +544,15 @@ function getRecommendation(answers) {
   const isAdventure = mood.includes('刺激');
 
   // Decision tree
+  if (isRainy) {
+    if (isSpicy) return { food: '火锅', emoji: '🫕', reason: '下雨天最适合吃辣辣的火锅，暖身又过瘾！' };
+    if (isLight) return { food: '肉骨茶', emoji: '🫕', reason: '雨天来一锅热腾腾的肉骨茶，全身暖和！' };
+    if (isNoodle) return { food: '汤面', emoji: '🍜', reason: '雨天最适合来一碗热汤面，暖胃暖心！' };
+    return { food: '火锅', emoji: '🫕', reason: '下雨天了，围炉吃火锅最幸福！' };
+  }
+  if (isAfternoon) {
+    return { food: '白咖啡', emoji: '☕', reason: '下午茶时间！来杯白咖啡配点心，放松一下～' };
+  }
   if (isMorning) {
     if (isPorridge || isLight) return { food: '粥', emoji: '🥣', reason: '早上来一碗暖暖的粥，开启美好的一天！' };
     if (isNoodle) return { food: '福建面', emoji: '🍜', reason: '早晨来一碗热腾腾的福建面，精神满满！' };
@@ -552,15 +585,85 @@ function getRecommendation(answers) {
 
 let aiAnswers = {};
 let aiStep = 0;
+let aiWeather = null;
 
-function startAIChat() {
+async function startAIChat() {
   aiAnswers = {};
   aiStep = 0;
+  aiWeather = null;
   const chatArea = document.getElementById('ai-chat-area');
   const optionsBar = document.getElementById('ai-options-bar');
   chatArea.innerHTML = '';
+  optionsBar.innerHTML = '<div style="text-align:center; color:#aaa; font-size:13px; padding:8px;">🌤️ 正在读取天气...</div>';
+
+  // Auto-detect time
+  const meal = getMealTime();
+  aiAnswers.meal = meal;
+
+  // Fetch weather if we have location
+  let weatherMsg = '';
+  if (userLat && userLng) {
+    aiWeather = await fetchWeather(userLat, userLng);
+    aiAnswers.weather = aiWeather;
+    if (aiWeather.isRainy) {
+      weatherMsg = `\n\n☔ 我看到你那边**正在下雨**！`;
+    } else if (aiWeather.isSunny) {
+      weatherMsg = `\n\n☀️ 今天天气不错！`;
+    }
+  }
+
   optionsBar.innerHTML = '';
-  setTimeout(() => askAIQuestion(0), 300);
+
+  // Opening message with time + weather context
+  const mealLabel = meal.replace(/^[^\s]+\s/, ''); // remove emoji
+  const greetMsg = `你好！我是 FoodRank AI 🤖${weatherMsg}\n\n现在是${mealLabel}时间，我来帮你决定吃什么！`;
+
+  // If rainy, give hotpot suggestion upfront
+  if (aiWeather?.isRainy) {
+    setTimeout(() => {
+      addAIBubble(greetMsg);
+      setTimeout(() => {
+        addAIBubble('下雨天嘛，不如直接吃火锅？还是你有其他想法？');
+        optionsBar.innerHTML = `
+          <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;">
+            <button onclick="aiRainyAccept()" style="flex:1; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">🫕 好！就火锅！</button>
+            <button onclick="aiRainyDecline()" style="flex:1; padding:12px; background:#f5f5f5; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer; color:#333;">🍜 我想吃别的</button>
+          </div>`;
+      }, 800);
+    }, 400);
+  } else {
+    setTimeout(() => {
+      addAIBubble(greetMsg);
+      setTimeout(() => askAIQuestion(0), 600);
+    }, 400);
+  }
+}
+
+function aiRainyAccept() {
+  addAIBubble('🫕 好！就火锅！', true);
+  document.getElementById('ai-options-bar').innerHTML = '';
+  setTimeout(() => {
+    showAIResultDirect({ food: '火锅', emoji: '🫕', reason: '下雨天吃火锅最幸福！围炉暖身，今天就它了！' });
+  }, 400);
+}
+
+function aiRainyDecline() {
+  addAIBubble('🍜 我想吃别的', true);
+  document.getElementById('ai-options-bar').innerHTML = '';
+  aiStep = 0;
+  setTimeout(() => askAIQuestion(0), 400);
+}
+
+function showAIResultDirect(rec) {
+  const optionsBar = document.getElementById('ai-options-bar');
+  addAIBubble(`${rec.emoji} <strong>推荐你吃：${rec.food}！</strong>\n\n${rec.reason}`);
+  optionsBar.innerHTML = `
+    <div style="display:flex; gap:10px; padding:4px 0;">
+      <button onclick="aiSearchFood('${rec.food}', '${rec.emoji}')" style="flex:1; padding:14px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:16px; font-size:15px; font-weight:800; cursor:pointer;">
+        🔍 搜索附近的${rec.food}
+      </button>
+      <button onclick="startAIChat()" style="padding:14px 16px; background:#f5f5f5; border:none; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer; color:#555;">🔄 重新问</button>
+    </div>`;
 }
 
 function addAIBubble(text, isUser = false) {
@@ -628,28 +731,9 @@ function selectAIOption(option, step) {
 
 function showAIResult() {
   const rec = getRecommendation(aiAnswers);
-  const optionsBar = document.getElementById('ai-options-bar');
-
   setTimeout(() => {
     addAIBubble(`好的！根据你的选择...\n我帮你分析完毕 🎯`);
-    setTimeout(() => {
-      addAIBubble(`${rec.emoji} <strong>今天推荐你吃：${rec.food}！</strong>\n\n${rec.reason}`);
-      optionsBar.innerHTML = `
-        <div style="display:flex; gap:10px; padding:4px 0;">
-          <button onclick="aiSearchFood('${rec.food}', '${rec.emoji}')" style="
-            flex:1; padding:14px; background:linear-gradient(135deg,#667eea,#764ba2);
-            color:#fff; border:none; border-radius:16px; font-size:15px;
-            font-weight:800; cursor:pointer;">
-            🔍 搜索附近的${rec.food}
-          </button>
-          <button onclick="startAIChat()" style="
-            padding:14px 16px; background:#f5f5f5; border:none;
-            border-radius:16px; font-size:14px; font-weight:700;
-            cursor:pointer; color:#555;">
-            🔄 重新问
-          </button>
-        </div>`;
-    }, 800);
+    setTimeout(() => showAIResultDirect(rec), 800);
   }, 400);
 }
 
