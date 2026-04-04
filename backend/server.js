@@ -991,18 +991,21 @@ function getSheetsClient() {
 }
 
 // Read all rows from the sheet → array of link objects
+// Columns: placeId | restaurantName | address | url | title | author | isFoodRank
 async function readAllRows() {
   const sheets = getSheetsClient();
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: 'Sheet1!A2:E',  // skip header row
+    range: 'Sheet1!A2:G',  // skip header row
   });
   return (resp.data.values || []).map(r => ({
-    placeId:    r[0] || '',
-    url:        r[1] || '',
-    title:      r[2] || '小红书笔记',
-    author:     r[3] || '未知',
-    isFoodRank: r[4] === 'TRUE' || r[4] === true,
+    placeId:        r[0] || '',
+    restaurantName: r[1] || '',
+    address:        r[2] || '',
+    url:            r[3] || '',
+    title:          r[4] || '小红书笔记',
+    author:         r[5] || '未知',
+    isFoodRank:     r[6] === 'TRUE' || r[6] === true,
   }));
 }
 
@@ -1032,7 +1035,7 @@ app.get('/api/xhs-links/:placeId', async (req, res) => {
 // POST — add a new link
 app.post('/api/admin/xhs-links', async (req, res) => {
   if (!checkAdmin(req, res)) return;
-  const { placeId, url, title, author, isFoodRank } = req.body;
+  const { placeId, restaurantName, address, url, title, author, isFoodRank } = req.body;
   if (!placeId || !url) return res.status(400).json({ error: 'placeId and url required' });
 
   try {
@@ -1047,11 +1050,13 @@ app.post('/api/admin/xhs-links', async (req, res) => {
     // Append new row
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: 'Sheet1!A:E',
+      range: 'Sheet1!A:G',
       valueInputOption: 'RAW',
       requestBody: {
         values: [[
           placeId,
+          (restaurantName || '').trim(),
+          (address || '').trim(),
           url.trim(),
           (title || '').trim() || '小红书笔记',
           (author || '').trim() || '未知',
@@ -1106,7 +1111,7 @@ app.delete('/api/admin/xhs-links/:placeId/:index', async (req, res) => {
             range: {
               sheetId:    sheetGid,
               dimension:  'ROWS',
-              startIndex: sheetRowIndex + 1, // +1 for header
+              startIndex: sheetRowIndex + 1, // +1 for header row
               endIndex:   sheetRowIndex + 2,
             },
           },

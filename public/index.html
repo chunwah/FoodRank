@@ -1360,7 +1360,7 @@ function goToDetail(index) {
   loadKLFoodie(r.name, food);
   loadTikTokVideos(r.name, food, city);
   loadYouTubeVideos(r.name, food, city);
-  loadXhsLinks(r.id);
+  loadXhsLinks(r.id, r.name, r.vicinity || r.address || '');
 }
 
 // ============================================================
@@ -1739,9 +1739,13 @@ function formatViewCount(n) {
 // Load XHS (小红书) manual links for a restaurant
 // ============================================================
 let _xhsCurrentPlaceId = null;
+let _xhsCurrentName    = '';
+let _xhsCurrentAddress = '';
 
-async function loadXhsLinks(placeId) {
+async function loadXhsLinks(placeId, restaurantName, address) {
   _xhsCurrentPlaceId = placeId;
+  _xhsCurrentName    = restaurantName || '';
+  _xhsCurrentAddress = address || '';
   const container = document.getElementById('xhs-posts-container');
   const platScore = document.getElementById('xhs-plat-score');
   const platBar   = document.getElementById('xhs-plat-bar');
@@ -1819,6 +1823,10 @@ function renderXhsLinks(links, placeId, platScore, platBar, platCount, container
   const adminForm = isAdminMode ? `
     <div style="margin-top:12px;padding:14px;background:#fff8e1;border:1px dashed #ffc107;border-radius:14px;">
       <div style="font-size:12px;font-weight:800;color:#f57c00;margin-bottom:10px;">➕ 添加小红书链接</div>
+      <div style="padding:8px 12px;background:#fff3cd;border-radius:8px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#333;">${escHtml(_xhsCurrentName)}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">${escHtml(_xhsCurrentAddress)}</div>
+      </div>
       <input id="xhs-form-url"    type="url"  placeholder="小红书链接 URL *"
              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:8px;box-sizing:border-box;" />
       <input id="xhs-form-title"  type="text" placeholder="标题（可选）"
@@ -1852,7 +1860,12 @@ async function xhsAddLink(placeId) {
     const res = await fetch(`${API_BASE}/admin/xhs-links`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': '6' },
-      body: JSON.stringify({ placeId, url, title, author, isFoodRank })
+      body: JSON.stringify({
+        placeId,
+        restaurantName: _xhsCurrentName,
+        address:        _xhsCurrentAddress,
+        url, title, author, isFoodRank
+      })
     });
     const data = await res.json();
     if (!res.ok) { showToast('❌ ' + (data.error || '保存失败')); return; }
