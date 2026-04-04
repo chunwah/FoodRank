@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const XHS_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID; // Legacy Google CSE (no longer used)
 const SERPAPI_KEY = process.env.SERPAPI_KEY; // SerpAPI key for XHS search via Baidu
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google Gemini AI
 
 app.use(cors());
 app.use(express.json());
@@ -831,6 +832,65 @@ function parseDuration(iso) {
 
 // ============================================================
 // ROUTE: Health check
+// ============================================================
+// ROUTE: AI Food Recommendation via Gemini
+// POST /api/ai-recommend
+// Body: { meal, weather, mood, base, flavor, budget, freeText, countryCode }
+// ============================================================
+app.post('/api/ai-recommend', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(400).json({ error: 'GEMINI_API_KEY 未设置' });
+  }
+
+  const { meal, weather, mood, base, flavor, budget, freeText, countryCode } = req.body;
+  const country = countryCode === 'SG' ? 'Singapore' : 'Malaysia';
+  const weatherDesc = weather?.isRainy ? '下雨天' : weather?.isSunny ? '晴天' : '阴天';
+  const tempDesc = weather?.temp ? `，气温 ${weather.temp}°C` : '';
+
+  const prompt = `你是一个专业的${country}美食推荐 AI，非常了解当地的美食文化。
+根据以下信息，推荐一道最适合的本地食物：
+
+- 时间段：${meal || '未知'}
+- 天气：${weatherDesc}${tempDesc}
+- 心情：${mood || '未知'}
+- 主食偏好：${base || '随便'}
+- 口味偏好：${flavor || '随便'}
+- 预算：${budget || '随便'}
+${freeText ? `- 用户补充：${freeText}` : ''}
+
+要求：
+1. 只推荐一道菜，必须是${country}常见的本地食物
+2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话
+3. 严格用以下 JSON 格式回复，不要加其他文字：
+
+{
+  "food": "食物名称（中文）",
+  "emoji": "一个emoji",
+  "reason": "推荐理由（中文，2-3句话）"
+}`;
+
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 300 }
+      }
+    );
+
+    const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Gemini 返回格式错误');
+
+    const rec = JSON.parse(jsonMatch[0]);
+    res.json({ success: true, food: rec.food, emoji: rec.emoji, reason: rec.reason });
+  } catch (err) {
+    console.error('❌ Gemini error:', err.message);
+    res.status(500).json({ error: 'AI 推荐失败', detail: err.message });
+  }
+});
+
 // GET /api/health
 // ============================================================
 app.get('/api/health', (req, res) => {

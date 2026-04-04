@@ -754,12 +754,53 @@ function selectAIOption(option, step) {
   setTimeout(() => askAIQuestion(aiStep), 400);
 }
 
-function showAIResult() {
-  const rec = getRecommendation(aiAnswers);
+async function showAIResult() {
+  setTimeout(() => addAIBubble(`好的！根据你的选择...\n我帮你分析完毕 🎯`), 400);
+
+  // Show typing indicator while waiting for Gemini
   setTimeout(() => {
-    addAIBubble(`好的！根据你的选择...\n我帮你分析完毕 🎯`);
-    setTimeout(() => showAIResultDirect(rec), 800);
-  }, 400);
+    const chatArea = document.getElementById('ai-chat-area');
+    const typing = document.createElement('div');
+    typing.id = 'ai-typing-result';
+    typing.style.cssText = 'display:flex; align-items:flex-end; gap:8px;';
+    typing.innerHTML = `<div style="font-size:28px;">🤖</div><div style="padding:12px 16px; border-radius:18px 18px 18px 4px; background:#f0f0f5; font-size:20px; letter-spacing:4px;">•••</div>`;
+    chatArea.appendChild(typing);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }, 800);
+
+  try {
+    const response = await fetch(`${API_BASE}/ai-recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        meal: aiAnswers.meal,
+        weather: aiAnswers.weather,
+        mood: aiAnswers.mood,
+        base: aiAnswers.base,
+        flavor: aiAnswers.flavor,
+        budget: aiAnswers.budget,
+        countryCode: userCountryCode
+      })
+    });
+
+    const t = document.getElementById('ai-typing-result');
+    if (t) t.remove();
+
+    if (response.ok) {
+      const rec = await response.json();
+      showAIResultDirect(rec);
+    } else {
+      // Fallback to rule-based if Gemini fails
+      const rec = getRecommendation(aiAnswers);
+      showAIResultDirect(rec);
+    }
+  } catch (err) {
+    const t = document.getElementById('ai-typing-result');
+    if (t) t.remove();
+    // Fallback to rule-based
+    const rec = getRecommendation(aiAnswers);
+    showAIResultDirect(rec);
+  }
 }
 
 function aiSearchFood(food, emoji) {
