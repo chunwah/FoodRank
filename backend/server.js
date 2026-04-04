@@ -848,26 +848,21 @@ app.post('/api/ai-recommend', async (req, res) => {
   const tempDesc = weather?.temp ? `，气温 ${weather.temp}°C` : '';
 
   const prompt = `你是一个专业的${country}美食推荐 AI，非常了解当地的美食文化。
-根据以下信息，推荐一道最适合的本地食物：
+  根据以下信息，推荐一道最适合的本地食物：
 
-- 时间段：${meal || '未知'}
-- 天气：${weatherDesc}${tempDesc}
-- 心情：${mood || '未知'}
-- 主食偏好：${base || '随便'}
-- 口味偏好：${flavor || '随便'}
-- 预算：${budget || '随便'}
-${freeText ? `- 用户补充：${freeText}` : ''}
+  - 时间段：${meal || '未知'}
+  - 天气：${weatherDesc}${tempDesc}
+  - 心情：${mood || '未知'}
+  - 主食偏好：${base || '随便'}
+  - 口味偏好：${flavor || '随便'}
+  - 预算：${budget || '随便'}
+  ${freeText ? `- 用户补充：${freeText}` : ''}
 
-要求：
-1. 只推荐一道菜，必须是${country}常见的本地食物
-2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话
-3. 严格用以下 JSON 格式回复，不要加其他文字：
+  要求：
+  1. 只推荐一道菜，必须是${country}常见的本地食物。
+  2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。
+  直接输出结果，不要重复我的问题，不要任何多余的寒暄。`;
 
-{
-  "food": "食物名称（中文）",
-  "emoji": "一个emoji",
-  "reason": "推荐理由（中文，2-3句话）"
-}`;
 
 const callGemini = async (prompt) => {
   // 1. 防御性编程：检查 prompt 是否有效
@@ -886,8 +881,17 @@ const callGemini = async (prompt) => {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
           temperature: 0.8, 
-          maxOutputTokens: 512,
-          responseMimeType: "application/json" 
+          maxOutputTokens: 800, 
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              food: { type: "string", description: "食物名称（中文）" },
+              emoji: { type: "string", description: "一个相关的emoji" },
+              reason: { type: "string", description: "推荐理由（中文，2-3句话）" }
+            },
+            required: ["food", "emoji", "reason"]
+          }
         }
       }
     );
