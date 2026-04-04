@@ -877,15 +877,14 @@ const callGemini = async (prompt) => {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
           temperature: 0.8, 
-          maxOutputTokens: 800, // 确保上限足够高
+          maxOutputTokens: 800, // 确保有充足的字数额度
           responseMimeType: "application/json",
-          // 强制规范 JSON 结构，防止模型废话
           responseSchema: {
-            type: "object",
+            type: "OBJECT", 
             properties: {
-              food: { type: "string" },
-              emoji: { type: "string" },
-              reason: { type: "string" }
+              food: { type: "STRING", description: "食物名称（中文）" },
+              emoji: { type: "STRING", description: "一个相关的emoji" },
+              reason: { type: "STRING", description: "推荐理由（中文，2-3句话）" }
             },
             required: ["food", "emoji", "reason"]
           }
