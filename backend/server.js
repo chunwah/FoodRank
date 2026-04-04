@@ -871,7 +871,7 @@ const callGemini = async (prompt) => {
   try {
     const response = await axios.post(
       // 确认你使用的是稳定版模型
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
