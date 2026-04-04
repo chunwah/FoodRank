@@ -241,7 +241,7 @@
     <div class="tab-bar">
       <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label">首页</div></div>
       <div class="tab-item" onclick="openSearch()"><div class="tab-icon">🔍</div><div class="tab-label">搜索</div></div>
-      <div class="tab-item" onclick="showToast('📍 附近功能开发中')"><div class="tab-icon">📍</div><div class="tab-label">附近</div></div>
+      <div class="tab-item" id="tab-ai" onclick="openAI()"><div class="tab-icon">🤖</div><div class="tab-label">AI推荐</div></div>
       <div class="tab-item" onclick="showToast('❤️ 收藏功能开发中')"><div class="tab-icon">❤️</div><div class="tab-label">收藏</div></div>
       <div class="tab-item" onclick="showToast('👤 个人页面开发中')"><div class="tab-icon">👤</div><div class="tab-label">我的</div></div>
     </div>
@@ -291,6 +291,23 @@
           <div style="font-size: 14px;">输入食物名称，点击搜索</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== AI RECOMMEND ==================== -->
+  <div class="screen" id="screen-ai">
+    <div style="background: linear-gradient(135deg,#667eea,#764ba2); padding: 16px 20px 20px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
+      <button class="nav-back" onclick="goBack()" style="background:rgba(255,255,255,0.2); color:#fff; border:none; width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">←</button>
+      <div>
+        <div style="font-size:17px; font-weight:800; color:#fff;">🤖 AI 帮你选</div>
+        <div style="font-size:12px; color:rgba(255,255,255,0.75);">回答几个问题，马上知道吃什么</div>
+      </div>
+    </div>
+    <div class="scroll-area" id="ai-chat-area" style="padding: 16px; display:flex; flex-direction:column; gap:12px;">
+      <!-- Chat bubbles populated dynamically -->
+    </div>
+    <div id="ai-options-bar" style="padding: 12px 16px; border-top: 1px solid #f0f0f0; background:#fff; flex-shrink:0;">
+      <!-- Option buttons populated dynamically -->
     </div>
   </div>
 
@@ -443,6 +460,205 @@ function goBack() {
 function openSearch() {
   screenHistory.push(currentScreen);
   showScreen('search');
+}
+
+function openAI() {
+  screenHistory.push(currentScreen);
+  showScreen('ai');
+  startAIChat();
+}
+
+// ============================================================
+// AI RECOMMEND
+// ============================================================
+const AI_QUESTIONS = [
+  {
+    id: 'meal',
+    text: '你好！我是 FoodRank AI 🤖\n现在是什么时间段？',
+    options: ['🌅 早餐', '☀️ 午餐', '🌙 晚餐', '🌃 宵夜']
+  },
+  {
+    id: 'mood',
+    text: '你今天的心情怎样？',
+    options: ['😄 开心，想庆祝', '😌 平静，随便吃', '😩 累了，要补一补', '🌶️ 想吃点刺激的']
+  },
+  {
+    id: 'base',
+    text: '想吃哪类主食？',
+    options: ['🍜 面条/粿条', '🍚 米饭', '🥣 粥/汤', '🥖 随便都可以']
+  },
+  {
+    id: 'flavor',
+    text: '口味偏好？',
+    options: ['🌶️ 辣的', '🍋 酸的', '🧄 浓郁香的', '😊 清淡一点']
+  },
+  {
+    id: 'budget',
+    text: '今天的预算大概？',
+    options: ['💚 便宜就好 (<RM15)', '💛 中等 (RM15–30)', '❤️ 不差钱 (RM30+)']
+  }
+];
+
+// Food recommendation matrix
+// Keys: meal-mood-base-flavor-budget combos → food name + emoji
+function getRecommendation(answers) {
+  const { meal, mood, base, flavor, budget } = answers;
+
+  // Rule-based recommendation
+  const isMorning = meal.includes('早');
+  const isLate = meal.includes('宵');
+  const isRice = base.includes('饭');
+  const isNoodle = base.includes('面') || base.includes('粿');
+  const isPorridge = base.includes('粥');
+  const isSpicy = flavor.includes('辣');
+  const isSour = flavor.includes('酸');
+  const isRich = flavor.includes('浓');
+  const isLight = flavor.includes('清淡');
+  const isBudget = budget.includes('<');
+  const isTired = mood.includes('累');
+  const isCelebrate = mood.includes('开心');
+  const isAdventure = mood.includes('刺激');
+
+  // Decision tree
+  if (isMorning) {
+    if (isPorridge || isLight) return { food: '粥', emoji: '🥣', reason: '早上来一碗暖暖的粥，开启美好的一天！' };
+    if (isNoodle) return { food: '福建面', emoji: '🍜', reason: '早晨来一碗热腾腾的福建面，精神满满！' };
+    return { food: '咖央吐司', emoji: '🍞', reason: '经典马来西亚早餐，配一杯 Kopi！' };
+  }
+  if (isLate) {
+    if (isSpicy) return { food: '辣炒板面', emoji: '🍜', reason: '宵夜就要吃点刺激的，辣炒板面超过瘾！' };
+    if (isNoodle) return { food: '叉烧面', emoji: '🍜', reason: '宵夜来一碗叉烧面，简单满足！' };
+    return { food: '炒粿条', emoji: '🍜', reason: '宵夜经典选择，镬气十足！' };
+  }
+  if (isPorridge) {
+    return { food: '猪肉粥', emoji: '🥣', reason: '清淡又营养，最适合今天的你！' };
+  }
+  if (isSpicy && isNoodle) return { food: '叻沙', emoji: '🍜', reason: '辣辣的叻沙，今天就要它！' };
+  if (isSpicy && isRice) return { food: '咖喱饭', emoji: '🍛', reason: '浓郁咖喱配白饭，太满足了！' };
+  if (isSour) return { food: '亚参叻沙', emoji: '🍜', reason: '酸酸开胃的亚参叻沙，一口就爱上！' };
+  if (isRich && isNoodle) return { food: '福建面', emoji: '🍜', reason: '黑黑浓郁的福建面，镬气十足！' };
+  if (isRich && isRice) return { food: '肉骨茶', emoji: '🫕', reason: '浓郁药材猪骨汤配饭，滋补又美味！' };
+  if (isLight && isNoodle) return { food: '云吞面', emoji: '🍜', reason: '清爽的云吞面，简单好味道！' };
+  if (isLight && isRice) return { food: '海南鸡饭', emoji: '🍚', reason: '清淡鲜嫩的海南鸡饭，百吃不厌！' };
+  if (isCelebrate && !isBudget) return { food: '烤鱼', emoji: '🐟', reason: '今天开心就要吃大餐，烤鱼走起！' };
+  if (isTired) return { food: '肉骨茶', emoji: '🫕', reason: '累了就要补一补，肉骨茶最滋补！' };
+  if (isAdventure) return { food: '炒粿条', emoji: '🍜', reason: '镬气十足的炒粿条，今天就要刺激！' };
+  if (isRice) return { food: '椰浆饭', emoji: '🍚', reason: '马来西亚灵魂食物，永远不会错！' };
+  if (isNoodle) return { food: '炒粿条', emoji: '🍜', reason: '经典马来西亚炒粿条，镬气满满！' };
+
+  // Default
+  return { food: '炒粿条', emoji: '🍜', reason: '万能推荐！今天就来一盘镬气十足的炒粿条吧！' };
+}
+
+let aiAnswers = {};
+let aiStep = 0;
+
+function startAIChat() {
+  aiAnswers = {};
+  aiStep = 0;
+  const chatArea = document.getElementById('ai-chat-area');
+  const optionsBar = document.getElementById('ai-options-bar');
+  chatArea.innerHTML = '';
+  optionsBar.innerHTML = '';
+  setTimeout(() => askAIQuestion(0), 300);
+}
+
+function addAIBubble(text, isUser = false) {
+  const chatArea = document.getElementById('ai-chat-area');
+  const bubble = document.createElement('div');
+  bubble.style.cssText = `display:flex; align-items:flex-end; gap:8px; ${isUser ? 'flex-direction:row-reverse;' : ''}`;
+  const avatar = isUser ? '👤' : '🤖';
+  const bgColor = isUser ? '#FF6B35' : '#f0f0f5';
+  const textColor = isUser ? '#fff' : '#111';
+  const text_nl = text.replace(/\n/g, '<br>');
+  bubble.innerHTML = `
+    <div style="font-size:28px; flex-shrink:0;">${avatar}</div>
+    <div style="max-width:75%; padding:12px 14px; border-radius:${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; background:${bgColor}; color:${textColor}; font-size:14px; line-height:1.5; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+      ${text_nl}
+    </div>`;
+  chatArea.appendChild(bubble);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function askAIQuestion(step) {
+  if (step >= AI_QUESTIONS.length) {
+    showAIResult();
+    return;
+  }
+  const q = AI_QUESTIONS[step];
+  // Typing indicator
+  const chatArea = document.getElementById('ai-chat-area');
+  const typing = document.createElement('div');
+  typing.id = 'ai-typing';
+  typing.style.cssText = 'display:flex; align-items:flex-end; gap:8px;';
+  typing.innerHTML = `<div style="font-size:28px;">🤖</div><div style="padding:12px 16px; border-radius:18px 18px 18px 4px; background:#f0f0f5; font-size:20px; letter-spacing:4px;">•••</div>`;
+  chatArea.appendChild(typing);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  setTimeout(() => {
+    const t = document.getElementById('ai-typing');
+    if (t) t.remove();
+    addAIBubble(q.text);
+    showAIOptions(q.options, step);
+  }, 700);
+}
+
+function showAIOptions(options, step) {
+  const optionsBar = document.getElementById('ai-options-bar');
+  optionsBar.innerHTML = options.map(opt => `
+    <button onclick="selectAIOption('${escHtml(opt)}', ${step})" style="
+      display:inline-block; margin: 4px; padding: 10px 16px;
+      background: #fff; border: 2px solid #e0e0e0; border-radius: 20px;
+      font-size: 14px; cursor: pointer; font-weight: 600; color: #333;
+      transition: all 0.15s;">
+      ${opt}
+    </button>`).join('');
+}
+
+function selectAIOption(option, step) {
+  const q = AI_QUESTIONS[step];
+  aiAnswers[q.id] = option;
+  // Show user's answer as bubble
+  addAIBubble(option, true);
+  // Clear options
+  document.getElementById('ai-options-bar').innerHTML = '';
+  aiStep = step + 1;
+  setTimeout(() => askAIQuestion(aiStep), 400);
+}
+
+function showAIResult() {
+  const rec = getRecommendation(aiAnswers);
+  const optionsBar = document.getElementById('ai-options-bar');
+
+  setTimeout(() => {
+    addAIBubble(`好的！根据你的选择...\n我帮你分析完毕 🎯`);
+    setTimeout(() => {
+      addAIBubble(`${rec.emoji} <strong>今天推荐你吃：${rec.food}！</strong>\n\n${rec.reason}`);
+      optionsBar.innerHTML = `
+        <div style="display:flex; gap:10px; padding:4px 0;">
+          <button onclick="aiSearchFood('${rec.food}', '${rec.emoji}')" style="
+            flex:1; padding:14px; background:linear-gradient(135deg,#667eea,#764ba2);
+            color:#fff; border:none; border-radius:16px; font-size:15px;
+            font-weight:800; cursor:pointer;">
+            🔍 搜索附近的${rec.food}
+          </button>
+          <button onclick="startAIChat()" style="
+            padding:14px 16px; background:#f5f5f5; border:none;
+            border-radius:16px; font-size:14px; font-weight:700;
+            cursor:pointer; color:#555;">
+            🔄 重新问
+          </button>
+        </div>`;
+    }, 800);
+  }, 400);
+}
+
+function aiSearchFood(food, emoji) {
+  currentEmoji = emoji;
+  document.getElementById('search-input').value = food;
+  screenHistory.push('ai');
+  showScreen('search');
+  doSearch();
 }
 
 function quickSearch(food, emoji) {
