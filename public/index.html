@@ -615,27 +615,52 @@ async function startAIChat() {
   optionsBar.innerHTML = '';
 
   // Opening message with time + weather context
-  const mealLabel = meal.replace(/^[^\s]+\s/, ''); // remove emoji
-  const greetMsg = `你好！我是 FoodRank AI 🤖${weatherMsg}\n\n现在是${mealLabel}时间，我来帮你决定吃什么！`;
+  const mealLabel = meal.replace(/^[\S]+\s/, ''); // remove emoji
+  const greetMsg = `你好！我是 FoodRank AI 🤖${weatherMsg}\n\n我看现在是${meal}时间，对吗？`;
 
-  // If rainy, give hotpot suggestion upfront
+  const mealOptions = `
+    <div style="margin-bottom:6px; font-size:12px; color:#aaa; font-weight:600;">确认或更改时间段：</div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+      ${['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'].map(m => `
+        <button onclick="selectMealTime('${m}')" style="
+          padding:9px 14px; background:${m === meal ? 'linear-gradient(135deg,#667eea,#764ba2)' : '#f5f5f5'};
+          color:${m === meal ? '#fff' : '#333'}; border:none; border-radius:20px;
+          font-size:13px; font-weight:700; cursor:pointer;">
+          ${m}
+        </button>`).join('')}
+    </div>`;
+
+  // If rainy, give hotpot suggestion after confirming time
   if (aiWeather?.isRainy) {
     setTimeout(() => {
       addAIBubble(greetMsg);
-      setTimeout(() => {
-        addAIBubble('下雨天嘛，不如直接吃火锅？还是你有其他想法？');
-        optionsBar.innerHTML = `
-          <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;">
-            <button onclick="aiRainyAccept()" style="flex:1; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">🫕 好！就火锅！</button>
-            <button onclick="aiRainyDecline()" style="flex:1; padding:12px; background:#f5f5f5; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer; color:#333;">🍜 我想吃别的</button>
-          </div>`;
-      }, 800);
+      optionsBar.innerHTML = mealOptions;
     }, 400);
   } else {
     setTimeout(() => {
       addAIBubble(greetMsg);
-      setTimeout(() => askAIQuestion(0), 600);
+      optionsBar.innerHTML = mealOptions;
     }, 400);
+  }
+}
+
+function selectMealTime(selectedMeal) {
+  aiAnswers.meal = selectedMeal;
+  addAIBubble(selectedMeal, true);
+  document.getElementById('ai-options-bar').innerHTML = '';
+
+  // After confirming time, check if rainy → hotpot suggestion
+  if (aiWeather?.isRainy) {
+    setTimeout(() => {
+      addAIBubble('下雨天嘛，不如直接吃火锅？还是你有其他想法？');
+      document.getElementById('ai-options-bar').innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;">
+          <button onclick="aiRainyAccept()" style="flex:1; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">🫕 好！就火锅！</button>
+          <button onclick="aiRainyDecline()" style="flex:1; padding:12px; background:#f5f5f5; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer; color:#333;">🍜 我想吃别的</button>
+        </div>`;
+    }, 400);
+  } else {
+    setTimeout(() => askAIQuestion(0), 400);
   }
 }
 
