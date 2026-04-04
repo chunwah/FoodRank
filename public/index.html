@@ -176,17 +176,18 @@
       <div class="header">
         <div class="header-top">
           <div class="app-logo">Food<span>Rank</span> 🍜</div>
-          <div class="location-pill" id="location-pill" onclick="showToast('📍 获取位置中...')">
-            📍 获取位置...
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button id="lang-toggle" onclick="toggleLang()" style="background:rgba(255,255,255,0.25); border:none; color:#fff; font-size:12px; font-weight:800; padding:5px 10px; border-radius:20px; cursor:pointer;">EN</button>
+            <div class="location-pill" id="location-pill" onclick="showToast('📍 获取位置中...')">📍 获取位置...</div>
           </div>
         </div>
         <div class="search-bar" onclick="openSearch()">
           <span>🔍</span>
-          <span>今天想吃什么？</span>
+          <span id="home-search-bar-text">今天想吃什么？</span>
         </div>
       </div>
 
-      <div class="section-title">🔥 热搜美食</div>
+      <div class="section-title" id="home-hot-title">🔥 热搜美食</div>
       <div class="category-row">
         <div class="cat-chip" onclick="quickSearch('炒粿条', '🍜')">🍜 炒粿条</div>
         <div class="cat-chip" onclick="quickSearch('叉烧饭', '🍖')">🍖 叉烧饭</div>
@@ -197,7 +198,7 @@
         <div class="cat-chip" onclick="quickSearch('霸王别姬', '🦀')">🦀 螃蟹</div>
       </div>
 
-      <div class="section-title">📊 马上探索</div>
+      <div class="section-title" id="home-explore-title">📊 马上探索</div>
       <div class="featured-row">
         <div class="feat-card" onclick="quickSearch('炒粿条', '🍜')">
           <div class="feat-img" style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2);">🍜</div>
@@ -230,20 +231,20 @@
       </div>
 
       <div style="margin: 20px 16px; background: linear-gradient(135deg, #f0f0ff, #e8e8ff); border-radius: 18px; padding: 16px;">
-        <div style="font-size: 14px; font-weight: 800; color: #333; margin-bottom: 6px;">🤖 关于 FoodRank</div>
+        <div id="home-about-title" style="font-size: 14px; font-weight: 800; color: #333; margin-bottom: 6px;">🤖 关于 FoodRank</div>
         <div style="font-size: 13px; color: #666; line-height: 1.6;">
-          根据你的<strong>当前位置</strong>，聚合 Google Reviews、Instagram、TikTok、YouTube、KLFoodie 的评分，给你最准确的排行榜。<br><br>
+          <span id="home-about-desc">根据你的<strong>当前位置</strong>，聚合 Google Reviews、Instagram、TikTok、YouTube、KLFoodie 的评分，给你最准确的排行榜。</span><br><br>
           <span style="color:#FF6B35; font-weight:700;">已上线：Google ✅ · Instagram ✅ · TikTok ✅ · YouTube ✅ · KLFoodie ✅</span>
         </div>
       </div>
     </div>
 
     <div class="tab-bar">
-      <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label">首页</div></div>
-      <div class="tab-item" onclick="openSearch()"><div class="tab-icon">🔍</div><div class="tab-label">搜索</div></div>
-      <div class="tab-item" id="tab-ai" onclick="openAI()"><div class="tab-icon">🤖</div><div class="tab-label">AI推荐</div></div>
-      <div class="tab-item" onclick="showToast('❤️ 收藏功能开发中')"><div class="tab-icon">❤️</div><div class="tab-label">收藏</div></div>
-      <div class="tab-item" onclick="showToast('👤 个人页面开发中')"><div class="tab-icon">👤</div><div class="tab-label">我的</div></div>
+      <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label" id="tab-label-home">首页</div></div>
+      <div class="tab-item" onclick="openSearch()"><div class="tab-icon">🔍</div><div class="tab-label" id="tab-label-search">搜索</div></div>
+      <div class="tab-item" id="tab-ai" onclick="openAI()"><div class="tab-icon">🤖</div><div class="tab-label" id="tab-label-ai">AI推荐</div></div>
+      <div class="tab-item" onclick="showToast(t('favComing'))"><div class="tab-icon">❤️</div><div class="tab-label" id="tab-label-fav">收藏</div></div>
+      <div class="tab-item" onclick="showToast(t('meComing'))"><div class="tab-icon">👤</div><div class="tab-label" id="tab-label-me">我的</div></div>
     </div>
   </div>
 
@@ -269,7 +270,7 @@
       <div class="search-input-wrap">
         <span>🔍</span>
         <input class="search-input" id="search-input" type="text" placeholder="输入食物名称..." value="炒粿条">
-        <button class="search-btn" onclick="doSearch()">搜索</button>
+        <button class="search-btn" id="search-btn" onclick="doSearch()">搜索</button>
       </div>
     </div>
 
@@ -299,8 +300,8 @@
     <div style="background: linear-gradient(135deg,#667eea,#764ba2); padding: 16px 20px 20px; flex-shrink:0; display:flex; align-items:center; gap:12px;">
       <button class="nav-back" onclick="goBack()" style="background:rgba(255,255,255,0.2); color:#fff; border:none; width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">←</button>
       <div>
-        <div style="font-size:17px; font-weight:800; color:#fff;">🤖 AI 帮你选</div>
-        <div style="font-size:12px; color:rgba(255,255,255,0.75);">回答几个问题，马上知道吃什么</div>
+        <div style="font-size:17px; font-weight:800; color:#fff;" id="ai-screen-title">🤖 AI 帮你选</div>
+        <div style="font-size:12px; color:rgba(255,255,255,0.75);" id="ai-screen-subtitle">回答几个问题，马上知道吃什么</div>
       </div>
     </div>
     <div class="scroll-area" id="ai-chat-area" style="padding: 16px; display:flex; flex-direction:column; gap:12px;">
@@ -349,6 +350,134 @@ let currentScreen = 'home';
 let searchResults = [];
 let currentEmoji = '🍜';
 let currentSort = 'score'; // 'score' | 'distance' | 'rating' | 'reviews'
+let currentLang = 'zh';   // 'zh' | 'en'
+
+// ============================================================
+// TRANSLATIONS
+// ============================================================
+const LANG = {
+  zh: {
+    searchBar: '今天想吃什么？',
+    searchPlaceholder: '输入食物名称...',
+    searchBtn: '搜索',
+    hotFood: '🔥 热搜美食',
+    explore: '📊 马上探索',
+    nearbyRank: '📍 附近排行',
+    aboutTitle: '🤖 关于 FoodRank',
+    aboutDesc: '根据你的<strong>当前位置</strong>，聚合 Google Reviews、Instagram、TikTok、YouTube、KLFoodie 的评分，给你最准确的排行榜。',
+    tabHome: '首页', tabSearch: '搜索', tabAI: 'AI推荐', tabFav: '收藏', tabMe: '我的',
+    searchTitle: '搜索美食',
+    sortScore: '📊 综合排名', sortRating: '⭐ 评分最高', sortDistance: '📍 距离最近', sortReviews: '💬 评论最多',
+    loadingMain: 'AI 正在搜索...',
+    loadingSteps: ['🔍 扫描 Google Reviews...','📍 定位附近餐厅...','⭐ 获取评分数据...','🤖 AI 计算综合排名...'],
+    open: '● 营业中', closed: '● 已休息',
+    noResults: '附近没找到结果', noResultsHint: '试试扩大搜索范围，或换个关键词',
+    showingTop: '显示前', results: '名',
+    aiTitle: '🤖 AI 帮你选', aiSubtitle: '回答几个问题，马上知道吃什么',
+    gettingWeather: '🌤️ 正在读取天气...',
+    searchNearby: '🔍 搜索附近的', retry: '🔄 重新问',
+    hotpotYes: '🫕 好！就火锅！', hotpotNo: '🍜 我想吃别的',
+    confirmTime: '确认或更改时间段：',
+    analyzing: '好的！根据你的选择...\n我帮你分析完毕 🎯',
+    rainyHotpot: '下雨天嘛，不如直接吃火锅？还是你有其他想法？',
+    favComing: '❤️ 收藏功能开发中', meComing: '👤 个人页面开发中',
+    mealTimes: ['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'],
+    aiQuestions: [
+      { id:'mood', text:'你今天的心情怎样？', options:['😄 开心，想庆祝','😌 平静，随便吃','😩 累了，要补一补','🌶️ 想吃点刺激的'] },
+      { id:'base', text:'想吃哪类主食？', options:['🍜 面条/粿条','🍚 米饭','🥣 粥/汤','🥖 随便都可以'] },
+      { id:'flavor', text:'口味偏好？', options:['🌶️ 辣的','🍋 酸的','🧄 浓郁香的','😊 清淡一点'] },
+      { id:'budget', text:'今天的预算大概？', options:['💚 便宜就好 (<RM15)','💛 中等 (RM15–30)','❤️ 不差钱 (RM30+)'] }
+    ],
+    greetWeatherRain: '☔ 我看到你那边**正在下雨**！',
+    greetWeatherSun: '☀️ 今天天气不错！',
+    greetMain: (meal, weather) => `你好！我是 FoodRank AI 🤖${weather}\n\n我看现在是${meal}时间，对吗？`,
+  },
+  en: {
+    searchBar: "What do you feel like eating?",
+    searchPlaceholder: 'Search for food...',
+    searchBtn: 'Search',
+    hotFood: '🔥 Popular Food',
+    explore: '📊 Explore Now',
+    nearbyRank: '📍 Nearby Ranking',
+    aboutTitle: '🤖 About FoodRank',
+    aboutDesc: 'Based on your <strong>current location</strong>, we aggregate ratings from Google Reviews, Instagram, TikTok, YouTube & KLFoodie to give you the most accurate food rankings.',
+    tabHome: 'Home', tabSearch: 'Search', tabAI: 'AI Pick', tabFav: 'Saved', tabMe: 'Profile',
+    searchTitle: 'Search Food',
+    sortScore: '📊 Top Ranked', sortRating: '⭐ Highest Score', sortDistance: '📍 Nearest', sortReviews: '💬 Most Reviews',
+    loadingMain: 'AI is searching...',
+    loadingSteps: ['🔍 Scanning Google Reviews...','📍 Locating nearby restaurants...','⭐ Fetching ratings...','🤖 AI calculating rankings...'],
+    open: '● Open', closed: '● Closed',
+    noResults: 'No results found nearby', noResultsHint: 'Try a different keyword or expand the radius',
+    showingTop: 'Showing top', results: 'results',
+    aiTitle: '🤖 AI Food Picker', aiSubtitle: 'Answer a few questions to find out what to eat',
+    gettingWeather: '🌤️ Reading weather...',
+    searchNearby: '🔍 Search nearby', retry: '🔄 Try again',
+    hotpotYes: '🫕 Yes! Hotpot it is!', hotpotNo: '🍜 I want something else',
+    confirmTime: 'Confirm or change meal time:',
+    analyzing: 'Got it! Based on your answers...\nAnalysis complete 🎯',
+    rainyHotpot: "Rainy day! How about hotpot to warm up? Or something else?",
+    favComing: '❤️ Saved feature coming soon', meComing: '👤 Profile coming soon',
+    mealTimes: ['🌅 Breakfast','☀️ Lunch','🌤️ Afternoon Tea','🌙 Dinner','🌃 Supper'],
+    aiQuestions: [
+      { id:'mood', text:'How are you feeling today?', options:['😄 Happy, want to celebrate','😌 Chill, anything goes','😩 Tired, need energy','🌶️ Feeling adventurous'] },
+      { id:'base', text:'What type of main would you like?', options:['🍜 Noodles','🍚 Rice','🥣 Porridge / Soup','🥖 Anything goes'] },
+      { id:'flavor', text:'Flavor preference?', options:['🌶️ Spicy','🍋 Sour','🧄 Rich & Savory','😊 Light & mild'] },
+      { id:'budget', text:"What's your budget?", options:['💚 Budget (<RM15)','💛 Mid-range (RM15–30)','❤️ Treat myself (RM30+)'] }
+    ],
+    greetWeatherRain: '☔ I can see it\'s **raining** where you are!',
+    greetWeatherSun: '☀️ Nice weather today!',
+    greetMain: (meal, weather) => `Hi! I'm FoodRank AI 🤖${weather}\n\nLooks like it's ${meal} time — shall I help you decide what to eat?`,
+  }
+};
+
+function t(key) { return LANG[currentLang][key]; }
+
+function toggleLang() {
+  currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  applyLang();
+}
+
+function applyLang() {
+  const L = LANG[currentLang];
+  // Toggle button label
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = currentLang === 'zh' ? 'EN' : '中文';
+  // Home screen
+  const sb = document.getElementById('home-search-bar-text');
+  if (sb) sb.textContent = L.searchBar;
+  const ht = document.getElementById('home-hot-title');
+  if (ht) ht.textContent = L.hotFood;
+  const ex = document.getElementById('home-explore-title');
+  if (ex) ex.textContent = L.explore;
+  document.querySelectorAll('.feat-score').forEach(el => el.textContent = L.nearbyRank);
+  const ab = document.getElementById('home-about-title');
+  if (ab) ab.textContent = L.aboutTitle;
+  const ad = document.getElementById('home-about-desc');
+  if (ad) ad.innerHTML = L.aboutDesc;
+  // Tab labels
+  const tabs = ['tab-label-home','tab-label-search','tab-label-ai','tab-label-fav','tab-label-me'];
+  const keys = ['tabHome','tabSearch','tabAI','tabFav','tabMe'];
+  tabs.forEach((id,i) => { const el = document.getElementById(id); if (el) el.textContent = L[keys[i]]; });
+  // Search screen
+  const si = document.getElementById('search-input');
+  if (si) si.placeholder = L.searchPlaceholder;
+  const sbtn = document.getElementById('search-btn');
+  if (sbtn) sbtn.textContent = L.searchBtn;
+  const st = document.getElementById('search-title');
+  if (st) st.textContent = L.searchTitle;
+  document.getElementById('chip-score').textContent  = L.sortScore;
+  document.getElementById('chip-rating').textContent = L.sortRating;
+  document.getElementById('chip-distance').textContent = L.sortDistance;
+  document.getElementById('chip-reviews').textContent = L.sortReviews;
+  // Loading text
+  const lm = document.getElementById('loading-main-text');
+  if (lm) lm.textContent = L.loadingMain;
+  // AI screen
+  const at = document.getElementById('ai-screen-title');
+  if (at) at.textContent = L.aiTitle;
+  const as = document.getElementById('ai-screen-subtitle');
+  if (as) as.textContent = L.aiSubtitle;
+}
 
 // Currency info per country (mirrors backend)
 const CURRENCY_MAP = {
@@ -497,11 +626,12 @@ const AI_QUESTIONS = [
 // Auto-detect meal time from current hour
 function getMealTime() {
   const h = new Date().getHours();
-  if (h >= 6 && h < 11)  return '🌅 早餐';
-  if (h >= 11 && h < 15) return '☀️ 午餐';
-  if (h >= 15 && h < 18) return '🌤️ 下午茶';
-  if (h >= 18 && h < 22) return '🌙 晚餐';
-  return '🌃 宵夜';
+  const times = t('mealTimes');
+  if (h >= 6 && h < 11)  return times[0]; // Breakfast
+  if (h >= 11 && h < 15) return times[1]; // Lunch
+  if (h >= 15 && h < 18) return times[2]; // Afternoon Tea
+  if (h >= 18 && h < 22) return times[3]; // Dinner
+  return times[4]; // Supper
 }
 
 // Fetch weather from Open-Meteo (free, no API key)
@@ -594,7 +724,7 @@ async function startAIChat() {
   const chatArea = document.getElementById('ai-chat-area');
   const optionsBar = document.getElementById('ai-options-bar');
   chatArea.innerHTML = '';
-  optionsBar.innerHTML = '<div style="text-align:center; color:#aaa; font-size:13px; padding:8px;">🌤️ 正在读取天气...</div>';
+  optionsBar.innerHTML = `<div style="text-align:center; color:#aaa; font-size:13px; padding:8px;">${t('gettingWeather')}</div>`;
 
   // Auto-detect time
   const meal = getMealTime();
@@ -605,23 +735,19 @@ async function startAIChat() {
   if (userLat && userLng) {
     aiWeather = await fetchWeather(userLat, userLng);
     aiAnswers.weather = aiWeather;
-    if (aiWeather.isRainy) {
-      weatherMsg = `\n\n☔ 我看到你那边**正在下雨**！`;
-    } else if (aiWeather.isSunny) {
-      weatherMsg = `\n\n☀️ 今天天气不错！`;
-    }
+    if (aiWeather.isRainy)      weatherMsg = '\n\n' + t('greetWeatherRain');
+    else if (aiWeather.isSunny) weatherMsg = '\n\n' + t('greetWeatherSun');
   }
 
   optionsBar.innerHTML = '';
 
   // Opening message with time + weather context
-  const mealLabel = meal.replace(/^[\S]+\s/, ''); // remove emoji
-  const greetMsg = `你好！我是 FoodRank AI 🤖${weatherMsg}\n\n我看现在是${meal}时间，对吗？`;
+  const greetMsg = LANG[currentLang].greetMain(meal, weatherMsg);
 
   const mealOptions = `
-    <div style="margin-bottom:6px; font-size:12px; color:#aaa; font-weight:600;">确认或更改时间段：</div>
+    <div style="margin-bottom:6px; font-size:12px; color:#aaa; font-weight:600;">${t('confirmTime')}</div>
     <div style="display:flex; flex-wrap:wrap; gap:6px;">
-      ${['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'].map(m => `
+      ${t('mealTimes').map(m => `
         <button onclick="selectMealTime('${m}')" style="
           padding:9px 14px; background:${m === meal ? 'linear-gradient(135deg,#667eea,#764ba2)' : '#f5f5f5'};
           color:${m === meal ? '#fff' : '#333'}; border:none; border-radius:20px;
@@ -652,11 +778,11 @@ function selectMealTime(selectedMeal) {
   // After confirming time, check if rainy → hotpot suggestion
   if (aiWeather?.isRainy) {
     setTimeout(() => {
-      addAIBubble('下雨天嘛，不如直接吃火锅？还是你有其他想法？');
+      addAIBubble(t('rainyHotpot'));
       document.getElementById('ai-options-bar').innerHTML = `
         <div style="display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;">
-          <button onclick="aiRainyAccept()" style="flex:1; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">🫕 好！就火锅！</button>
-          <button onclick="aiRainyDecline()" style="flex:1; padding:12px; background:#f5f5f5; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer; color:#333;">🍜 我想吃别的</button>
+          <button onclick="aiRainyAccept()" style="flex:1; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">${t('hotpotYes')}</button>
+          <button onclick="aiRainyDecline()" style="flex:1; padding:12px; background:#f5f5f5; border:none; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer; color:#333;">${t('hotpotNo')}</button>
         </div>`;
     }, 400);
   } else {
@@ -665,7 +791,7 @@ function selectMealTime(selectedMeal) {
 }
 
 function aiRainyAccept() {
-  addAIBubble('🫕 好！就火锅！', true);
+  addAIBubble(t('hotpotYes'), true);
   document.getElementById('ai-options-bar').innerHTML = '';
   setTimeout(() => {
     showAIResultDirect({ food: '火锅', emoji: '🫕', reason: '下雨天吃火锅最幸福！围炉暖身，今天就它了！' });
@@ -681,13 +807,14 @@ function aiRainyDecline() {
 
 function showAIResultDirect(rec) {
   const optionsBar = document.getElementById('ai-options-bar');
-  addAIBubble(`${rec.emoji} <strong>推荐你吃：${rec.food}！</strong>\n\n${rec.reason}`);
+  const recLabel = currentLang === 'zh' ? `推荐你吃：${rec.food}！` : `Recommended: ${rec.food}!`;
+  addAIBubble(`${rec.emoji} <strong>${recLabel}</strong>\n\n${rec.reason}`);
   optionsBar.innerHTML = `
     <div style="display:flex; gap:10px; padding:4px 0;">
       <button onclick="aiSearchFood('${rec.food}', '${rec.emoji}')" style="flex:1; padding:14px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:16px; font-size:15px; font-weight:800; cursor:pointer;">
-        🔍 搜索附近的${rec.food}
+        ${t('searchNearby')} ${rec.food}
       </button>
-      <button onclick="startAIChat()" style="padding:14px 16px; background:#f5f5f5; border:none; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer; color:#555;">🔄 重新问</button>
+      <button onclick="startAIChat()" style="padding:14px 16px; background:#f5f5f5; border:none; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer; color:#555;">${t('retry')}</button>
     </div>`;
 }
 
@@ -709,11 +836,12 @@ function addAIBubble(text, isUser = false) {
 }
 
 function askAIQuestion(step) {
-  if (step >= AI_QUESTIONS.length) {
+  const questions = t('aiQuestions');
+  if (step >= questions.length) {
     showAIResult();
     return;
   }
-  const q = AI_QUESTIONS[step];
+  const q = questions[step];
   // Typing indicator
   const chatArea = document.getElementById('ai-chat-area');
   const typing = document.createElement('div');
@@ -744,7 +872,7 @@ function showAIOptions(options, step) {
 }
 
 function selectAIOption(option, step) {
-  const q = AI_QUESTIONS[step];
+  const q = t('aiQuestions')[step];
   aiAnswers[q.id] = option;
   // Show user's answer as bubble
   addAIBubble(option, true);
@@ -755,7 +883,7 @@ function selectAIOption(option, step) {
 }
 
 async function showAIResult() {
-  setTimeout(() => addAIBubble(`好的！根据你的选择...\n我帮你分析完毕 🎯`), 400);
+  setTimeout(() => addAIBubble(t('analyzing')), 400);
 
   // Show typing indicator while waiting for Gemini
   setTimeout(() => {
@@ -779,7 +907,8 @@ async function showAIResult() {
         base: aiAnswers.base,
         flavor: aiAnswers.flavor,
         budget: aiAnswers.budget,
-        countryCode: userCountryCode
+        countryCode: userCountryCode,
+        lang: currentLang
       })
     });
 
@@ -844,12 +973,7 @@ async function doSearch() {
     // Show loading overlay
     if (loadingEl) loadingEl.style.display = 'flex';
 
-    const steps = [
-      '🔍 扫描 Google Reviews...',
-      '📍 定位附近餐厅...',
-      '⭐ 获取评分数据...',
-      '🤖 AI 计算综合排名...'
-    ];
+    const steps = t('loadingSteps');
     let stepIndex = 0;
     stepInterval = setInterval(() => {
       const el = document.getElementById('loading-sub-text');
@@ -857,8 +981,8 @@ async function doSearch() {
     }, 600);
 
     const mainTextEl = document.getElementById('loading-main-text');
-    if (mainTextEl) mainTextEl.textContent = `搜索"${food}"中...`;
-    document.getElementById('search-title').textContent = food + ' 排行榜';
+    if (mainTextEl) mainTextEl.textContent = t('loadingMain');
+    document.getElementById('search-title').textContent = food + (currentLang === 'zh' ? ' 排行榜' : ' Ranking');
 
     const response = await fetch(`${API_BASE}/search`, {
       method: 'POST',
@@ -935,8 +1059,8 @@ function renderSortedResults() {
     const scoreColor = r.googleRating >= 4.5 ? 'background: linear-gradient(135deg,#FF6B35,#FF9B35)' :
                        r.googleRating >= 4.0 ? 'background: linear-gradient(135deg,#4CAF50,#2e7d32)' :
                        'background: linear-gradient(135deg,#aaa,#888)';
-    const openBadge = r.isOpen === true ? '<span class="open-badge open">● 营业中</span>' :
-                      r.isOpen === false ? '<span class="open-badge closed">● 已休息</span>' : '';
+    const openBadge = r.isOpen === true ? `<span class="open-badge open">${t('open')}</span>` :
+                      r.isOpen === false ? `<span class="open-badge closed">${t('closed')}</span>` : '';
     const imgHtml = r.photoRef
       ? `<img src="/api/photo?name=${encodeURIComponent(r.photoRef)}" onerror="this.parentElement.innerHTML='${currentEmoji}'" />`
       : currentEmoji;
@@ -961,7 +1085,7 @@ function renderSortedResults() {
           <div style="font-size:10px; color:#aaa; margin-top:4px; text-align:center;">Google</div>
         </div>
       </div>`;
-  }).join('') + `<div style="text-align:center; padding:16px; color:#bbb; font-size:13px;">显示前 ${sorted.length} 名</div>`;
+  }).join('') + `<div style="text-align:center; padding:16px; color:#bbb; font-size:13px;">${t('showingTop')} ${sorted.length} ${t('results')}</div>`;
 }
 
 function renderResults(data) {
@@ -977,8 +1101,8 @@ function renderResults(data) {
     list.innerHTML = `
       <div style="text-align:center; padding: 40px 20px; color: #bbb;">
         <div style="font-size: 40px; margin-bottom: 12px;">😕</div>
-        <div style="font-size: 15px; font-weight:700; color:#333;">附近没找到结果</div>
-        <div style="font-size: 13px; margin-top:6px;">试试扩大搜索范围，或换个关键词</div>
+        <div style="font-size: 15px; font-weight:700; color:#333;">${t('noResults')}</div>
+        <div style="font-size: 13px; margin-top:6px;">${t('noResultsHint')}</div>
       </div>`;
     return;
   }

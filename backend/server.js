@@ -842,25 +842,46 @@ app.post('/api/ai-recommend', async (req, res) => {
     return res.status(400).json({ error: 'GEMINI_API_KEY 未设置' });
   }
 
-  const { meal, weather, mood, base, flavor, budget, freeText, countryCode } = req.body;
+  const { meal, weather, mood, base, flavor, budget, freeText, countryCode, lang } = req.body;
   const country = countryCode === 'SG' ? 'Singapore' : 'Malaysia';
-  const weatherDesc = weather?.isRainy ? '下雨天' : weather?.isSunny ? '晴天' : '阴天';
-  const tempDesc = weather?.temp ? `，气温 ${weather.temp}°C` : '';
+  const isEn = lang === 'en';
 
-  const prompt = `你是一个专业的${country}美食推荐 AI，非常了解当地的美食文化。
-  根据以下信息，推荐一道最适合的本地食物：
+  const weatherDesc = isEn
+    ? (weather?.isRainy ? 'Rainy' : weather?.isSunny ? 'Sunny' : 'Cloudy')
+    : (weather?.isRainy ? '下雨天' : weather?.isSunny ? '晴天' : '阴天');
+  const tempDesc = weather?.temp ? (isEn ? `, ${weather.temp}°C` : `，气温 ${weather.temp}°C`) : '';
 
-  - 时间段：${meal || '未知'}
-  - 天气：${weatherDesc}${tempDesc}
-  - 心情：${mood || '未知'}
-  - 主食偏好：${base || '随便'}
-  - 口味偏好：${flavor || '随便'}
-  - 预算：${budget || '随便'}
-  ${freeText ? `- 用户补充：${freeText}` : ''}
+  const prompt = isEn
+    ? `You are an expert ${country} food recommendation AI with deep knowledge of local food culture.
+Based on the following context, recommend ONE local dish:
+- Meal time: ${meal || 'unknown'}
+- Weather: ${weatherDesc}${tempDesc}
+- Mood: ${mood || 'unknown'}
+- Preferred base: ${base || 'anything'}
+- Flavor preference: ${flavor || 'anything'}
+- Budget: ${budget || 'any'}
+${freeText ? `- Extra info: ${freeText}` : ''}
 
-  要求：
-  1. 只推荐一道菜，必须是${country}常见的本地食物。
-  2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。`;
+Rules:
+1. Recommend only ONE dish, must be a common local food in ${country}.
+2. Write the reason in a warm, fun tone, referencing the weather and mood. 2-3 sentences.
+3. Reply ONLY with this JSON (no extra text):
+{"food":"dish name","emoji":"one emoji","reason":"your reason in English"}`
+    : `你是一个专业的${country}美食推荐 AI，非常了解当地的美食文化。
+根据以下信息，推荐一道最适合的本地食物：
+- 时间段：${meal || '未知'}
+- 天气：${weatherDesc}${tempDesc}
+- 心情：${mood || '未知'}
+- 主食偏好：${base || '随便'}
+- 口味偏好：${flavor || '随便'}
+- 预算：${budget || '随便'}
+${freeText ? `- 用户补充：${freeText}` : ''}
+
+要求：
+1. 只推荐一道菜，必须是${country}常见的本地食物。
+2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。
+3. 严格用以下 JSON 格式回复，不要加其他文字：
+{"food":"食物名称（中文）","emoji":"一个emoji","reason":"推荐理由（中文）"}`;
 
 console.log("给Gemini的prompt:", prompt);
 const callGemini = async (prompt) => {
