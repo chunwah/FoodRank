@@ -860,8 +860,7 @@ app.post('/api/ai-recommend', async (req, res) => {
 
   要求：
   1. 只推荐一道菜，必须是${country}常见的本地食物。
-  2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。
-  直接输出结果，不要重复我的问题，不要任何多余的寒暄。`;
+  2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。`;
 
 console.log("给Gemini的prompt:", prompt);
 const callGemini = async (prompt) => {
@@ -876,8 +875,8 @@ const callGemini = async (prompt) => {
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
-          temperature: 0.8, 
-          maxOutputTokens: 800, // 确保有充足的字数额度
+          temperature: 0.4, 
+          maxOutputTokens: 2048, 
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT", 
