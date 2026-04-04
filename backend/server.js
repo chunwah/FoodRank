@@ -869,7 +869,7 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
   "reason": "推荐理由（中文，2-3句话）"
 }`;
 
-  try {
+  const callGemini = async () => {
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -877,17 +877,31 @@ ${freeText ? `- 用户补充：${freeText}` : ''}
         generationConfig: { temperature: 0.8, maxOutputTokens: 300 }
       }
     );
-
     const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    // Extract JSON from response (handle markdown code blocks)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Gemini 返回格式错误');
+    return JSON.parse(jsonMatch[0]);
+  };
 
-    const rec = JSON.parse(jsonMatch[0]);
+  try {
+    let rec;
+    try {
+      rec = await callGemini();
+    } catch (err) {
+      if (err.response?.status === 429) {
+        // Rate limited — wait 3s and retry once
+        console.log('⚠️ Gemini rate limited, retrying in 3s...');
+        await new Promise(r => setTimeout(r, 3000));
+        rec = await callGemini();
+      } else {
+        throw err;
+      }
+    }
     res.json({ success: true, food: rec.food, emoji: rec.emoji, reason: rec.reason });
   } catch (err) {
-    console.error('❌ Gemini error:', err.message);
-    res.status(500).json({ error: 'AI 推荐失败', detail: err.message });
+    console.error('❌ Gemini error:', err.response?.status, err.message);
+    // Return 503 so frontend knows to fallback gracefully
+    res.status(503).json({ error: 'AI 推荐暂时不可用', fallback: true });
   }
 });
 

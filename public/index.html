@@ -786,12 +786,13 @@ async function showAIResult() {
     const t = document.getElementById('ai-typing-result');
     if (t) t.remove();
 
-    if (response.ok) {
-      const rec = await response.json();
-      showAIResultDirect(rec);
+    const data = await response.json();
+    if (response.ok && data.food) {
+      showAIResultDirect(data);
     } else {
-      // Fallback to rule-based if Gemini fails
+      // Fallback to rule-based
       const rec = getRecommendation(aiAnswers);
+      if (data.fallback) rec.reason = rec.reason + '\n\n_(AI 繁忙中，用备用推荐)_';
       showAIResultDirect(rec);
     }
   } catch (err) {
