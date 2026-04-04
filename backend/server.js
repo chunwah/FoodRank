@@ -906,13 +906,13 @@ const callGemini = async (prompt) => {
   try {
     let rec;
     try {
-      rec = await callGemini();
+      rec = await callGemini(prompt);
     } catch (err) {
       if (err.response?.status === 429) {
         // Rate limited — wait 10s and retry once
         console.log('⚠️ Gemini rate limited, retrying in 10s...');
         await new Promise(r => setTimeout(r, 10000));
-        rec = await callGemini();
+        rec = await callGemini(prompt);
       } else {
         throw err;
       }
