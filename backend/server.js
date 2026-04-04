@@ -863,56 +863,54 @@ app.post('/api/ai-recommend', async (req, res) => {
   2. 推荐理由要温暖、有趣，联系到天气和心情，2-3句话。
   直接输出结果，不要重复我的问题，不要任何多余的寒暄。`;
 
-
+console.log("给Gemini的prompt:", prompt);
 const callGemini = async (prompt) => {
-  // 1. 防御性编程：检查 prompt 是否有效
   if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-    console.error("【错误】拦截到无效的请求：prompt 为空或未定义", { 传入的值: prompt });
     throw new Error('请求失败：必须提供有效的文本 prompt');
   }
 
-  // 打印出来确认一下
-  console.log("即将发送给 Gemini 的 prompt 是:", prompt);
-
   try {
     const response = await axios.post(
+      // 确认你使用的是稳定版模型
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { 
           temperature: 0.8, 
-          maxOutputTokens: 800, 
+          maxOutputTokens: 800, // 确保上限足够高
           responseMimeType: "application/json",
+          // 强制规范 JSON 结构，防止模型废话
           responseSchema: {
             type: "object",
             properties: {
-              food: { type: "string", description: "食物名称（中文）" },
-              emoji: { type: "string", description: "一个相关的emoji" },
-              reason: { type: "string", description: "推荐理由（中文，2-3句话）" }
+              food: { type: "string" },
+              emoji: { type: "string" },
+              reason: { type: "string" }
             },
             required: ["food", "emoji", "reason"]
           }
-        }
+        },
+        // 临时放宽安全策略，排除误杀的可能性
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
       }
     );
 
-    const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = response.data.candidates?.[0];
+    const rawText = candidate?.content?.parts?.[0]?.text || '';
     
-    // 1. 打印真相：看看 Gemini 到底吐出了什么奇葩格式
+    // 💡 核心侦察兵：打印 API 到底是因为什么停止生成的
+    console.log("【停止原因 finishReason】:", candidate?.finishReason);
     console.log("【Gemini 原始返回文本】:", rawText);
 
-    // 2. 清洗文本：强行去掉可能存在的 Markdown 格式
-    const cleanedText = rawText
-      .replace(/```json/gi, '') // 去掉开头的 ```json
-      .replace(/```/g, '')      // 去掉结尾的 ```
-      .trim();                  // 去掉前后的空格和换行
-
-    // 3. 安全解析
     try {
-      return JSON.parse(cleanedText);
+      return JSON.parse(rawText);
     } catch (parseError) {
-      console.error("❌ JSON 解析彻底失败！清理后的文本是:\n", cleanedText);
-      // 如果依然失败，抛出一个更清晰的错误，前端也能收到
+      console.error("❌ JSON 解析彻底失败！");
       throw new Error("模型返回的 JSON 格式不规范，请重试");
     }
 
