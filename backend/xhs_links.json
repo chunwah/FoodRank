@@ -1,0 +1,11 @@
+{
+  "_readme": "Map placeId to an array of XHS (小红书) links. isFoodRank=true means it's an official FoodRank post.",
+  "ChIJexample123": [
+    {
+      "url": "https://www.xiaohongshu.com/explore/example",
+      "title": "这家炒粿条真的绝了！",
+      "author": "FoodRank美食",
+      "isFoodRank": true
+    }
+  ]
+}

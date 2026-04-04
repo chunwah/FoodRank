@@ -1239,6 +1239,13 @@ function goToDetail(index) {
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="yt-plat-bar" style="width:0%; background:linear-gradient(90deg,#FF0000,#FF5722);"></div></div>
           <div class="plat-score-val" id="yt-plat-score" style="color:#ddd;">…</div>
         </div>
+        <div class="plat-row" id="xhs-plat-row">
+          <div class="plat-icon-big" style="background:#fff0f0;">📕</div>
+          <div class="plat-name">小红书</div>
+          <div class="plat-count" id="xhs-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-bar-wrap"><div class="plat-bar-fill" id="xhs-plat-bar" style="width:0%; background:linear-gradient(90deg,#ff2442,#ff6b81);"></div></div>
+          <div class="plat-score-val" id="xhs-plat-score" style="color:#ddd;">…</div>
+        </div>
       </div>
     </div>
 
@@ -1306,6 +1313,19 @@ function goToDetail(index) {
 
     <div class="divider"></div>
 
+    <!-- XHS (小红书) section — populated by loadXhsLinks() after render -->
+    <div id="xhs-section">
+      <div class="section-header">📕 小红书</div>
+      <div id="xhs-posts-container" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:10px;">
+        <div style="text-align:center; padding:20px; color:#bbb;">
+          <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+          <div style="font-size:13px;">正在加载小红书...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
     <div class="coming-soon-banner">
       <div class="cs-title">🚀 更多平台即将上线</div>
       <div style="font-size:12px; color:#888;">我们正在接入以下平台的数据</div>
@@ -1340,6 +1360,7 @@ function goToDetail(index) {
   loadKLFoodie(r.name, food);
   loadTikTokVideos(r.name, food, city);
   loadYouTubeVideos(r.name, food, city);
+  loadXhsLinks(r.id);
 }
 
 // ============================================================
@@ -1712,6 +1733,150 @@ function formatViewCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
   if (n >= 1000)    return (n / 1000).toFixed(0) + 'K';
   return String(n);
+}
+
+// ============================================================
+// Load XHS (小红书) manual links for a restaurant
+// ============================================================
+let _xhsCurrentPlaceId = null;
+
+async function loadXhsLinks(placeId) {
+  _xhsCurrentPlaceId = placeId;
+  const container = document.getElementById('xhs-posts-container');
+  const platScore = document.getElementById('xhs-plat-score');
+  const platBar   = document.getElementById('xhs-plat-bar');
+  const platCount = document.getElementById('xhs-plat-count');
+  if (!container) return;
+
+  try {
+    const res   = await fetch(`${API_BASE}/xhs-links/${encodeURIComponent(placeId)}`);
+    const data  = await res.json();
+    const links = data.links || [];
+    renderXhsLinks(links, placeId, platScore, platBar, platCount, container);
+  } catch (err) {
+    console.error('XHS load error:', err);
+    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">小红书加载失败</div>`;
+    if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ddd'; }
+    if (platCount) platCount.textContent = '加载失败';
+  }
+}
+
+function renderXhsLinks(links, placeId, platScore, platBar, platCount, container) {
+  // ---- Platform score row ----
+  platScore = platScore || document.getElementById('xhs-plat-score');
+  platBar   = platBar   || document.getElementById('xhs-plat-bar');
+  platCount = platCount || document.getElementById('xhs-plat-count');
+  container = container || document.getElementById('xhs-posts-container');
+
+  if (links.length > 0) {
+    platCount.textContent    = `${links.length} 篇笔记`;
+    platCount.style.color    = '#aaa';
+    platBar.style.width      = Math.min(100, links.length * 25) + '%';
+    platScore.textContent    = links.length;
+    platScore.style.color    = '#ff2442';
+    platScore.style.fontSize = '14px';
+  } else {
+    platScore.textContent = '–';
+    platScore.style.color = '#ddd';
+    platCount.textContent = '暂无';
+  }
+
+  // ---- Link cards ----
+  const cardsHtml = links.length === 0
+    ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">暂无小红书笔记</div>`
+    : links.map((link, idx) => {
+        const isFR = link.isFoodRank;
+        const deleteBtn = isAdminMode
+          ? `<button onclick="xhsDeleteLink('${escHtml(placeId)}',${idx})"
+                    style="flex-shrink:0;padding:4px 10px;background:#ff2442;color:#fff;border:none;
+                           border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">删除</button>`
+          : `<div style="font-size:18px;color:#ff2442;flex-shrink:0;">›</div>`;
+
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:14px;
+                      box-shadow:0 1px 6px rgba(0,0,0,0.07);border:1px solid ${isFR ? '#ffcdd2' : '#f0f0f0'};">
+            <a href="${escHtml(link.url)}" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+              <div style="width:40px;height:40px;border-radius:10px;background:${isFR ? 'linear-gradient(135deg,#ff2442,#ff6b81)' : '#fff0f0'};
+                          display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+                📕
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:#111;line-height:1.4;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${escHtml(link.title || '小红书笔记')}
+                </div>
+                <div style="font-size:11px;color:#aaa;margin-top:3px;display:flex;align-items:center;gap:6px;">
+                  ${isFR ? `<span style="background:#ff2442;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;">FoodRank</span>` : ''}
+                  <span>${escHtml(link.author || '小红书')}</span>
+                </div>
+              </div>
+            </a>
+            ${deleteBtn}
+          </div>`;
+      }).join('');
+
+  // ---- Admin add-link form ----
+  const adminForm = isAdminMode ? `
+    <div style="margin-top:12px;padding:14px;background:#fff8e1;border:1px dashed #ffc107;border-radius:14px;">
+      <div style="font-size:12px;font-weight:800;color:#f57c00;margin-bottom:10px;">➕ 添加小红书链接</div>
+      <input id="xhs-form-url"    type="url"  placeholder="小红书链接 URL *"
+             style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:8px;box-sizing:border-box;" />
+      <input id="xhs-form-title"  type="text" placeholder="标题（可选）"
+             style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:8px;box-sizing:border-box;" />
+      <input id="xhs-form-author" type="text" placeholder="作者名（可选）"
+             style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:10px;box-sizing:border-box;" />
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#555;margin-bottom:12px;cursor:pointer;">
+        <input id="xhs-form-foodrank" type="checkbox" style="width:18px;height:18px;accent-color:#ff2442;" />
+        这是 FoodRank 官方帖子
+      </label>
+      <button onclick="xhsAddLink('${escHtml(placeId)}')"
+              style="width:100%;padding:11px;background:#ff2442;color:#fff;border:none;border-radius:10px;
+                     font-size:14px;font-weight:700;cursor:pointer;">
+        保存链接
+      </button>
+    </div>` : '';
+
+  container.innerHTML = cardsHtml + adminForm;
+}
+
+async function xhsAddLink(placeId) {
+  const url       = document.getElementById('xhs-form-url')?.value?.trim();
+  const title     = document.getElementById('xhs-form-title')?.value?.trim();
+  const author    = document.getElementById('xhs-form-author')?.value?.trim();
+  const isFoodRank = document.getElementById('xhs-form-foodrank')?.checked || false;
+
+  if (!url) { showToast('⚠️ 请填写链接 URL'); return; }
+  if (!url.startsWith('http')) { showToast('⚠️ 请输入有效的 URL'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/xhs-links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': '6' },
+      body: JSON.stringify({ placeId, url, title, author, isFoodRank })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || '保存失败')); return; }
+    showToast('✅ 链接已保存！');
+    renderXhsLinks(data.links, placeId);
+  } catch (err) {
+    showToast('❌ 网络错误，请重试');
+  }
+}
+
+async function xhsDeleteLink(placeId, index) {
+  if (!confirm('确定删除这条链接？')) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/xhs-links/${encodeURIComponent(placeId)}/${index}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-key': '6' }
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast('❌ ' + (data.error || '删除失败')); return; }
+    showToast('🗑️ 已删除');
+    renderXhsLinks(data.links, placeId);
+  } catch (err) {
+    showToast('❌ 网络错误，请重试');
+  }
 }
 
 function openMaps(name, placeId) {
