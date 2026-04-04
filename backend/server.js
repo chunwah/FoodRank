@@ -9,6 +9,7 @@ const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const { google } = require('googleapis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -974,18 +975,35 @@ const callGemini = async (prompt, lang = 'zh') => {
 const XHS_DB_PATH = path.join(__dirname, 'xhs_links.json');
 
 const ADMIN_KEY = process.env.ADMIN_KEY || '6';
+const SHEET_ID  = process.env.GOOGLE_SHEET_ID; // The spreadsheet ID from the URL
 
-function readXhsDb() {
-  try {
-    const raw = fs.readFileSync(XHS_DB_PATH, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    return {};
-  }
+// ---- Google Sheets auth ----
+function getSheetsClient() {
+  // Credentials stored as a JSON string in env var GOOGLE_SERVICE_ACCOUNT_JSON
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON not set');
+  const creds = JSON.parse(raw);
+  const auth = new google.auth.GoogleAuth({
+    credentials: creds,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  return google.sheets({ version: 'v4', auth });
 }
 
-function writeXhsDb(db) {
-  fs.writeFileSync(XHS_DB_PATH, JSON.stringify(db, null, 2), 'utf8');
+// Read all rows from the sheet → array of link objects
+async function readAllRows() {
+  const sheets = getSheetsClient();
+  const resp = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: 'Sheet1!A2:E',  // skip header row
+  });
+  return (resp.data.values || []).map(r => ({
+    placeId:    r[0] || '',
+    url:        r[1] || '',
+    title:      r[2] || '小红书笔记',
+    author:     r[3] || '未知',
+    isFoodRank: r[4] === 'TRUE' || r[4] === true,
+  }));
 }
 
 function checkAdmin(req, res) {
@@ -997,55 +1015,113 @@ function checkAdmin(req, res) {
   return true;
 }
 
-// GET — fetch links for a place
-app.get('/api/xhs-links/:placeId', (req, res) => {
-  const { placeId } = req.params;
-  const db = readXhsDb();
-  const links = db[placeId] || [];
-  res.json({ links });
+// GET — fetch links for a specific placeId
+app.get('/api/xhs-links/:placeId', async (req, res) => {
+  try {
+    const { placeId } = req.params;
+    if (!SHEET_ID) return res.json({ links: [] });
+    const all   = await readAllRows();
+    const links = all.filter(r => r.placeId === placeId).map(({ placeId: _, ...rest }) => rest);
+    res.json({ links });
+  } catch (err) {
+    console.error('XHS read error:', err.message);
+    res.json({ links: [] });
+  }
 });
 
-// POST — add a new link for a place
-app.post('/api/admin/xhs-links', (req, res) => {
+// POST — add a new link
+app.post('/api/admin/xhs-links', async (req, res) => {
   if (!checkAdmin(req, res)) return;
   const { placeId, url, title, author, isFoodRank } = req.body;
   if (!placeId || !url) return res.status(400).json({ error: 'placeId and url required' });
 
-  const db = readXhsDb();
-  if (!db[placeId]) db[placeId] = [];
+  try {
+    const sheets = getSheetsClient();
 
-  // Avoid duplicate URLs
-  if (db[placeId].some(l => l.url === url)) {
-    return res.status(409).json({ error: '该链接已存在' });
+    // Check duplicate
+    const all = await readAllRows();
+    if (all.some(r => r.placeId === placeId && r.url === url)) {
+      return res.status(409).json({ error: '该链接已存在' });
+    }
+
+    // Append new row
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: 'Sheet1!A:E',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          placeId,
+          url.trim(),
+          (title || '').trim() || '小红书笔记',
+          (author || '').trim() || '未知',
+          isFoodRank ? 'TRUE' : 'FALSE',
+        ]],
+      },
+    });
+
+    // Return updated links for this place
+    const updated = (await readAllRows())
+      .filter(r => r.placeId === placeId)
+      .map(({ placeId: _, ...rest }) => rest);
+    res.json({ ok: true, links: updated });
+  } catch (err) {
+    console.error('XHS write error:', err.message);
+    res.status(500).json({ error: '保存失败: ' + err.message });
   }
-
-  db[placeId].push({
-    url:        url.trim(),
-    title:      (title || '').trim() || '小红书笔记',
-    author:     (author || '').trim() || '未知',
-    isFoodRank: !!isFoodRank
-  });
-
-  writeXhsDb(db);
-  res.json({ ok: true, links: db[placeId] });
 });
 
-// DELETE — remove a link by index
-app.delete('/api/admin/xhs-links/:placeId/:index', (req, res) => {
+// DELETE — remove a link by index (among links for that placeId)
+app.delete('/api/admin/xhs-links/:placeId/:index', async (req, res) => {
   if (!checkAdmin(req, res)) return;
   const { placeId, index } = req.params;
-  const idx = parseInt(index, 10);
+  const targetIdx = parseInt(index, 10);
 
-  const db = readXhsDb();
-  if (!db[placeId] || !db[placeId][idx]) {
-    return res.status(404).json({ error: '链接不存在' });
+  try {
+    const sheets = getSheetsClient();
+    const all    = await readAllRows();
+
+    // Find which sheet row (0-based among all rows) corresponds to targetIdx for this placeId
+    let countForPlace = 0;
+    let sheetRowIndex = -1; // 0-based index in all rows
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].placeId === placeId) {
+        if (countForPlace === targetIdx) { sheetRowIndex = i; break; }
+        countForPlace++;
+      }
+    }
+
+    if (sheetRowIndex === -1) return res.status(404).json({ error: '链接不存在' });
+
+    // Get spreadsheet info to find the actual sheet gid
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const sheetGid = meta.data.sheets[0].properties.sheetId;
+
+    // Delete the row (sheetRowIndex + 1 to skip header, +1 because API is 0-based start)
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: {
+              sheetId:    sheetGid,
+              dimension:  'ROWS',
+              startIndex: sheetRowIndex + 1, // +1 for header
+              endIndex:   sheetRowIndex + 2,
+            },
+          },
+        }],
+      },
+    });
+
+    const updated = (await readAllRows())
+      .filter(r => r.placeId === placeId)
+      .map(({ placeId: _, ...rest }) => rest);
+    res.json({ ok: true, links: updated });
+  } catch (err) {
+    console.error('XHS delete error:', err.message);
+    res.status(500).json({ error: '删除失败: ' + err.message });
   }
-
-  db[placeId].splice(idx, 1);
-  if (db[placeId].length === 0) delete db[placeId];
-
-  writeXhsDb(db);
-  res.json({ ok: true, links: db[placeId] || [] });
 });
 
 app.get('/api/health', (req, res) => {
