@@ -274,10 +274,10 @@
     </div>
 
     <div class="filter-row">
-      <div class="filter-chip active">📊 综合排名</div>
-      <div class="filter-chip" onclick="showToast('⭐ 按评分排序（即将推出）')">⭐ 评分最高</div>
-      <div class="filter-chip" onclick="showToast('📍 按距离排序（即将推出）')">📍 距离最近</div>
-      <div class="filter-chip" onclick="showToast('💬 按评论数排序（即将推出）')">💬 评论最多</div>
+      <div class="filter-chip active" id="chip-score" onclick="setSort('score')">📊 综合排名</div>
+      <div class="filter-chip" id="chip-rating" onclick="setSort('rating')">⭐ 评分最高</div>
+      <div class="filter-chip" id="chip-distance" onclick="setSort('distance')">📍 距离最近</div>
+      <div class="filter-chip" id="chip-reviews" onclick="setSort('reviews')">💬 评论最多</div>
     </div>
 
     <div style="padding: 8px 16px 4px; font-size: 13px; color: #888;" id="search-summary">
@@ -331,6 +331,7 @@ let screenHistory = [];
 let currentScreen = 'home';
 let searchResults = [];
 let currentEmoji = '🍜';
+let currentSort = 'score'; // 'score' | 'distance' | 'rating' | 'reviews'
 
 // Currency info per country (mirrors backend)
 const CURRENCY_MAP = {
@@ -532,6 +533,70 @@ async function doSearch() {
   if (data) renderResults(data);
 }
 
+function setSort(mode) {
+  if (searchResults.length === 0) return;
+  currentSort = mode;
+
+  // Update active chip
+  ['score','rating','distance','reviews'].forEach(m => {
+    const el = document.getElementById('chip-' + m);
+    if (el) el.classList.toggle('active', m === mode);
+  });
+
+  renderSortedResults();
+}
+
+function applySort(results) {
+  const sorted = [...results];
+  if (currentSort === 'distance') {
+    sorted.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+  } else if (currentSort === 'rating') {
+    sorted.sort((a, b) => (b.googleRating || 0) - (a.googleRating || 0));
+  } else if (currentSort === 'reviews') {
+    sorted.sort((a, b) => (b.googleReviewCount || 0) - (a.googleReviewCount || 0));
+  } else {
+    // 'score' — keep original order (already sorted by backend)
+  }
+  return sorted;
+}
+
+function renderSortedResults() {
+  const sorted = applySort(searchResults);
+  const list = document.getElementById('results-list');
+  list.innerHTML = sorted.map((r, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const scoreColor = r.googleRating >= 4.5 ? 'background: linear-gradient(135deg,#FF6B35,#FF9B35)' :
+                       r.googleRating >= 4.0 ? 'background: linear-gradient(135deg,#4CAF50,#2e7d32)' :
+                       'background: linear-gradient(135deg,#aaa,#888)';
+    const openBadge = r.isOpen === true ? '<span class="open-badge open">● 营业中</span>' :
+                      r.isOpen === false ? '<span class="open-badge closed">● 已休息</span>' : '';
+    const imgHtml = r.photoRef
+      ? `<img src="/api/photo?name=${encodeURIComponent(r.photoRef)}" onerror="this.parentElement.innerHTML='${currentEmoji}'" />`
+      : currentEmoji;
+    // Find original index for goToDetail
+    const origIndex = searchResults.indexOf(r);
+    return `
+      <div class="rank-card" onclick="goToDetail(${origIndex})">
+        <div class="rank-num ${rankClass}">${i + 1}</div>
+        <div class="rank-img">${imgHtml}</div>
+        <div class="rank-info">
+          <div class="rank-name">${escHtml(r.name)}</div>
+          <div class="rank-meta">📍 ${r.distanceText ? r.distanceText + ' · ' : ''}${escHtml(r.address.split(',')[0])} ${openBadge}</div>
+          <div class="platform-scores">
+            ${r.googleRating ? `<div class="plat-badge google">🟢 G ${r.googleRating.toFixed(1)} (${formatCount(r.googleReviewCount)})</div>` : '<div class="plat-badge" style="color:#aaa;">暂无评分</div>'}
+            ${r.priceLevel ? `<div class="plat-badge">${r.priceLevel}</div>` : ''}
+          </div>
+        </div>
+        <div class="rank-score-big">
+          <div class="score-circle" style="${scoreColor}; font-size:${r.googleRating ? '16px' : '12px'};">
+            ${r.googleRating ? r.googleRating.toFixed(1) : 'N/A'}
+          </div>
+          <div style="font-size:10px; color:#aaa; margin-top:4px; text-align:center;">Google</div>
+        </div>
+      </div>`;
+  }).join('') + `<div style="text-align:center; padding:16px; color:#bbb; font-size:13px;">显示前 ${sorted.length} 名</div>`;
+}
+
 function renderResults(data) {
   const list = document.getElementById('results-list');
   const summary = document.getElementById('search-summary');
@@ -551,39 +616,14 @@ function renderResults(data) {
     return;
   }
 
-  list.innerHTML = data.results.map((r, i) => {
-    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    const scoreColor = r.googleRating >= 4.5 ? 'background: linear-gradient(135deg,#FF6B35,#FF9B35)' :
-                       r.googleRating >= 4.0 ? 'background: linear-gradient(135deg,#4CAF50,#2e7d32)' :
-                       'background: linear-gradient(135deg,#aaa,#888)';
+  // Reset sort to default on new search, update chips
+  currentSort = 'score';
+  ['score','rating','distance','reviews'].forEach(m => {
+    const el = document.getElementById('chip-' + m);
+    if (el) el.classList.toggle('active', m === 'score');
+  });
 
-    const openBadge = r.isOpen === true ? '<span class="open-badge open">● 营业中</span>' :
-                      r.isOpen === false ? '<span class="open-badge closed">● 已休息</span>' : '';
-
-    const imgHtml = r.photoRef
-      ? `<img src="/api/photo?name=${encodeURIComponent(r.photoRef)}" onerror="this.parentElement.innerHTML='${currentEmoji}'" />`
-      : currentEmoji;
-
-    return `
-      <div class="rank-card" onclick="goToDetail(${i})">
-        <div class="rank-num ${rankClass}">${i + 1}</div>
-        <div class="rank-img">${imgHtml}</div>
-        <div class="rank-info">
-          <div class="rank-name">${escHtml(r.name)}</div>
-          <div class="rank-meta">📍 ${r.distanceText ? r.distanceText + ' · ' : ''}${escHtml(r.address.split(',')[0])} ${openBadge}</div>
-          <div class="platform-scores">
-            ${r.googleRating ? `<div class="plat-badge google">🟢 G ${r.googleRating.toFixed(1)} (${formatCount(r.googleReviewCount)})</div>` : '<div class="plat-badge" style="color:#aaa;">暂无评分</div>'}
-            ${r.priceLevel ? `<div class="plat-badge">${r.priceLevel}</div>` : ''}
-          </div>
-        </div>
-        <div class="rank-score-big">
-          <div class="score-circle" style="${scoreColor}; font-size:${r.googleRating ? '16px' : '12px'};">
-            ${r.googleRating ? r.googleRating.toFixed(1) : 'N/A'}
-          </div>
-          <div style="font-size:10px; color:#aaa; margin-top:4px; text-align:center;">Google</div>
-        </div>
-      </div>`;
-  }).join('') + `<div style="text-align:center; padding:16px; color:#bbb; font-size:13px;">显示前 ${data.results.length} 名</div>`;
+  renderSortedResults();
 }
 
 function showError(title, msg) {
