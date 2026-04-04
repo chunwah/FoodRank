@@ -351,6 +351,7 @@ let searchResults = [];
 let currentEmoji = '🍜';
 let currentSort = 'score'; // 'score' | 'distance' | 'rating' | 'reviews'
 let currentLang = 'zh';   // 'zh' | 'en'
+const isAdminMode = new URLSearchParams(window.location.search).get('admin') === '6';
 
 // ============================================================
 // TRANSLATIONS
@@ -1318,6 +1319,13 @@ function goToDetail(index) {
     <button class="open-app-btn" onclick="openMaps('${escHtml(r.name)}', ${r.id ? '"' + r.id + '"' : 'null'})">
       🗺️ 导航去这里
     </button>
+    ${isAdminMode && r.id ? `
+    <div style="margin:8px 16px 16px; padding:10px 14px; background:#fff8e1; border:1px dashed #ffc107; border-radius:12px;">
+      <div style="font-size:10px; color:#f57c00; font-weight:700; margin-bottom:4px;">🔑 ADMIN — Place ID</div>
+      <div style="font-size:11px; color:#555; font-family:monospace; word-break:break-all; margin-bottom:8px;">${r.id}</div>
+      <button onclick="copyPlaceId('${r.id}')" style="width:100%; padding:7px; background:#ffc107; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:#333;">📋 复制 Place ID</button>
+    </div>
+    ` : ''}
   `;
 
   document.getElementById('detail-body').innerHTML = body;
@@ -1719,6 +1727,21 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function copyPlaceId(id) {
+  navigator.clipboard.writeText(id)
+    .then(() => showToast('✅ Place ID 已复制！'))
+    .catch(() => {
+      // Fallback for browsers that don't support clipboard API
+      const el = document.createElement('textarea');
+      el.value = id;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast('✅ Place ID 已复制！');
+    });
 }
 
 function escHtml(str) {
