@@ -893,7 +893,24 @@ const callGemini = async (prompt) => {
     );
 
     const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return JSON.parse(rawText);
+    
+    // 1. 打印真相：看看 Gemini 到底吐出了什么奇葩格式
+    console.log("【Gemini 原始返回文本】:", rawText);
+
+    // 2. 清洗文本：强行去掉可能存在的 Markdown 格式
+    const cleanedText = rawText
+      .replace(/```json/gi, '') // 去掉开头的 ```json
+      .replace(/```/g, '')      // 去掉结尾的 ```
+      .trim();                  // 去掉前后的空格和换行
+
+    // 3. 安全解析
+    try {
+      return JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("❌ JSON 解析彻底失败！清理后的文本是:\n", cleanedText);
+      // 如果依然失败，抛出一个更清晰的错误，前端也能收到
+      throw new Error("模型返回的 JSON 格式不规范，请重试");
+    }
 
   } catch (error) {
     if (error.response) {
