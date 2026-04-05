@@ -282,8 +282,9 @@ app.get('/api/place/:placeId', async (req, res) => {
   if (!checkApiKey(res)) return;
 
   const { placeId } = req.params;
+  const lang = req.query.lang === 'en' ? 'en' : 'zh';
   try {
-    const detail = await getPlaceDetails(placeId);
+    const detail = await getPlaceDetails(placeId, lang);
     res.json(detail);
   } catch (error) {
     console.error('❌ Place detail error:', error.response?.data || error.message);
@@ -1142,7 +1143,9 @@ app.get('/api/health', (req, res) => {
 // ============================================================
 // HELPER: Get Place Details from Google Places API (New)
 // ============================================================
-async function getPlaceDetails(placeId) {
+async function getPlaceDetails(placeId, lang = 'zh') {
+  // Map app lang to Google Accept-Language value
+  const acceptLang = lang === 'en' ? 'en' : 'zh-TW';
   const response = await axios.get(
     `https://places.googleapis.com/v1/places/${placeId}`,
     {
@@ -1162,7 +1165,7 @@ async function getPlaceDetails(placeId) {
           'websiteUri',
           'photos'
         ].join(','),
-        'Accept-Language': 'zh-TW'
+        'Accept-Language': acceptLang
       }
     }
   );

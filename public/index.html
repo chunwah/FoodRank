@@ -1587,7 +1587,7 @@ async function loadGoogleReviews(placeId) {
   if (!container) return;
 
   try {
-    const res  = await fetch(`${API_BASE}/place/${encodeURIComponent(placeId)}`);
+    const res  = await fetch(`${API_BASE}/place/${encodeURIComponent(placeId)}?lang=${currentLang}`);
     const data = await res.json();
 
     const reviews = data.reviews || [];
@@ -2184,7 +2184,7 @@ function copyPlaceId(id) {
   showToast(t('toastOpening')(name));
 
   try {
-    const res  = await fetch(`${API_BASE}/place/${encodeURIComponent(placeId)}`);
+    const res  = await fetch(`${API_BASE}/place/${encodeURIComponent(placeId)}?lang=${currentLang}`);
     const data = await res.json();
 
     // Build a restaurant object compatible with goToDetail()
