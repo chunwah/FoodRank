@@ -526,75 +526,78 @@ function analyzeSentiment(text) {
 // KLFoodie pages often contain structured ratings in Google rich snippets.
 // ============================================================
 app.get('/api/klfoodie', async (req, res) => {
-  const { restaurant, food = '' } = req.query;
+  const { restaurant, food = '', country = 'MY' } = req.query;
   if (!restaurant) return res.status(400).json({ error: '需要提供 restaurant 名称' });
 
   if (!SERPAPI_KEY || SERPAPI_KEY === 'your_serpapi_key_here') {
     return res.json({ posts: [], total: 0, message: 'SERPAPI_KEY 未设置' });
   }
 
-  // KLFoodie is English — extract English name, fall back to full name if none
+  // Pick the right foodie site based on country
+  const isSG     = country === 'SG';
+  const siteName = isSG ? 'singaporefoodie.com' : 'klfoodie.com';
+  const gl       = isSG ? 'sg' : 'my';
+
+  // These sites are English — extract English name, fall back to full name if none
   const englishName = extractEnglishName(restaurant) || restaurant;
-  // For food fallback, use English translation (e.g. 咖喱面 → "curry mee")
   const englishFood = buildSearchQuery(food).split(' ').slice(1).join(' ') || food;
-  console.log(`🍽️  KLFoodie 搜索 (英文): "${restaurant}" → "${englishName}"`);
+  console.log(`🍽️  ${siteName} 搜索 (英文): "${restaurant}" → "${englishName}"`);
 
   try {
     // Tier 1: exact English restaurant name
-    let items = await searchKLFoodie(`"${englishName}"`);
+    let items = await searchFoodieSite(`"${englishName}"`, siteName, gl);
 
     // Tier 2: without quotes (broader)
     if (items.length === 0) {
       console.log(`   无精确结果，尝试宽搜 "${englishName}"...`);
-      items = await searchKLFoodie(englishName);
+      items = await searchFoodieSite(englishName, siteName, gl);
     }
 
     // Tier 3: English food type as last resort
     if (items.length === 0 && englishFood) {
       console.log(`   尝试食物类型搜索: "${englishFood}"...`);
-      items = await searchKLFoodie(englishFood);
+      items = await searchFoodieSite(englishFood, siteName, gl);
       items.forEach(i => i.matchType = 'food');
     }
 
-    // Extract rating from Google rich snippets (KLFoodie uses schema.org)
+    // Extract rating from Google rich snippets
     const scored = items.filter(i => i.rating);
     const avgRating = scored.length > 0
       ? parseFloat((scored.reduce((s, i) => s + i.rating, 0) / scored.length).toFixed(1))
       : null;
 
     items = items.slice(0, 3);
-    console.log(`✅ KLFoodie 找到 ${items.length} 条结果，平均评分: ${avgRating || 'N/A'}`);
-    res.json({ posts: items, avgRating, total: items.length });
+    console.log(`✅ ${siteName} 找到 ${items.length} 条结果，平均评分: ${avgRating || 'N/A'}`);
+    res.json({ posts: items, avgRating, total: items.length, siteName });
 
   } catch (err) {
-    console.error('❌ KLFoodie error:', err.message);
+    console.error(`❌ ${siteName} error:`, err.message);
     res.json({ posts: [], avgRating: null, total: 0, error: err.message });
   }
 });
 
 /**
- * Search klfoodie.com via SerpAPI (Google site: filter)
+ * Search a foodie site (klfoodie.com or singaporefoodie.com) via SerpAPI
  */
-async function searchKLFoodie(query) {
+async function searchFoodieSite(query, siteName, gl = 'my') {
   const response = await axios.get('https://serpapi.com/search', {
     params: {
       engine:  'google',
-      q:       `site:klfoodie.com ${query}`,
+      q:       `site:${siteName} ${query}`,
       api_key: SERPAPI_KEY,
       num:     5,
-      gl:      'my',   // Malaysia
+      gl,
       hl:      'en'
     },
     timeout: 10000
   });
 
   const results = response.data.organic_results || [];
-  console.log(`   site:klfoodie.com "${query}" → ${results.length} 条`);
+  console.log(`   site:${siteName} "${query}" → ${results.length} 条`);
 
   return results
-    .filter(r => (r.link || '').includes('klfoodie.com'))
+    .filter(r => (r.link || '').includes(siteName))
     .map(r => {
-      // Try to extract rating from rich snippet (KLFoodie has schema.org markup)
       const ratingRaw = r.rich_snippet?.top?.detected_extensions?.rating
                      || r.rich_snippet?.bottom?.detected_extensions?.rating
                      || null;
@@ -612,6 +615,9 @@ async function searchKLFoodie(query) {
       };
     });
 }
+
+// Keep old name as alias for any legacy calls
+const searchKLFoodie = (query) => searchFoodieSite(query, 'klfoodie.com', 'my');
 
 // ============================================================
 // ROUTE: TikTok videos for a restaurant

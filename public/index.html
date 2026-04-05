@@ -1573,7 +1573,7 @@ function goToDetail(index) {
   const city    = userCountryName || 'Kuala Lumpur';
   loadGoogleReviews(r.id);
   loadInstagramPosts(r.name, food, city);
-  loadKLFoodie(r.name, food);
+  loadKLFoodie(r.name, food, userCountryCode);
   loadTikTokVideos(r.name, food, city);
   loadYouTubeVideos(r.name, food, city);
   loadXhsLinks(r.id, r.name, r.vicinity || r.address || '');
@@ -1708,22 +1708,32 @@ async function loadInstagramPosts(restaurantName, food, city) {
 // ============================================================
 // Load KLFoodie reviews for a restaurant
 // ============================================================
-async function loadKLFoodie(restaurantName, food) {
+async function loadKLFoodie(restaurantName, food, country) {
   const container = document.getElementById('klf-posts-container');
   const platScore = document.getElementById('klf-plat-score');
   const platBar   = document.getElementById('klf-plat-bar');
   const platCount = document.getElementById('klf-plat-count');
   if (!container) return;
 
+  const isSG       = (country || userCountryCode) === 'SG';
+  const siteName   = isSG ? 'SingaporeFoodie' : 'KLFoodie';
+  const siteUrl    = isSG ? 'singaporefoodie.com' : 'klfoodie.com';
+
+  // Update section header + platform row name to reflect actual site
+  const sectionHeader = document.querySelector('#klf-section .section-header');
+  if (sectionHeader) sectionHeader.textContent = `🍽️ ${siteName}`;
+  const platNameEl = document.querySelector('#klf-plat-row .plat-name');
+  if (platNameEl) platNameEl.textContent = siteName;
+
   try {
-    const params = new URLSearchParams({ restaurant: restaurantName, food });
+    const params = new URLSearchParams({ restaurant: restaurantName, food, country: country || userCountryCode });
     const res  = await fetch(`${API_BASE}/klfoodie?${params}`);
     const data = await res.json();
 
     const posts = data.posts || [];
 
     if (posts.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('klfNone')}</div>`;
+      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('klfNone').replace('KLFoodie', siteName)}</div>`;
       if (platCount) platCount.textContent = t('none');
       if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ccc'; }
       return;
@@ -1737,22 +1747,27 @@ async function loadKLFoodie(restaurantName, food) {
       platScore.style.color = '#f57c00';
     }
 
-    container.innerHTML = posts.map(p => renderKLFoodieCard(p)).join('');
+    container.innerHTML = posts.map(p => renderKLFoodieCard(p, siteName)).join('');
 
   } catch (err) {
-    console.error('KLFoodie load error:', err);
+    console.error('KLFoodie/SingaporeFoodie load error:', err);
     if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('klfLoadFail')}</div>`;
     if (platCount) platCount.textContent = '–';
   }
 }
 
-function renderKLFoodieCard(p) {
+function renderKLFoodieCard(p, siteName) {
+  siteName = siteName || 'KLFoodie';
   const ratingHtml = p.rating
     ? `<span style="background:#fff8e1;color:#f57c00;font-weight:800;border-radius:8px;padding:2px 8px;font-size:13px;">⭐ ${p.rating.toFixed(1)}</span>${p.reviewCount ? `<span style="color:#aaa;font-size:11px;"> · ${p.reviewCount} ${t('klfRatings')}</span>` : ''}`
     : '';
 
   const matchBadge = p.matchType === 'food'
     ? `<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;">Food</span>` : '';
+
+  const viewLabel = currentLang === 'zh'
+    ? `🔗 在 ${siteName} 查看 →`
+    : `🔗 View on ${siteName} →`;
 
   return `
     <div onclick="window.open('${escHtml(p.link)}','_blank')"
@@ -1763,7 +1778,7 @@ function renderKLFoodieCard(p) {
       </div>
       ${ratingHtml ? `<div style="display:flex;align-items:center;gap:6px;">${ratingHtml} ${matchBadge}</div>` : ''}
       ${p.snippet ? `<div style="font-size:12px;color:#666;line-height:1.5;">${escHtml(p.snippet)}</div>` : ''}
-      <div style="font-size:11px;color:#f57c00;font-weight:600;margin-top:2px;">${t('klfViewOn')}</div>
+      <div style="font-size:11px;color:#f57c00;font-weight:600;margin-top:2px;">${viewLabel}</div>
     </div>`;
 }
 
