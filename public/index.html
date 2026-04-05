@@ -1563,10 +1563,11 @@ function goToDetail(index) {
   `;
 
   document.getElementById('detail-body').innerHTML = body;
-  document.getElementById('detail-body').scrollTop = 0;
   // Store current restaurant for share button
   window._currentRestaurant = r;
   showScreen('detail');
+  // Reset scroll AFTER screen is visible (display:none blocks scrollTop)
+  document.getElementById('detail-body').scrollTop = 0;
 
   // Load all platform data asynchronously in parallel after page renders
   const food    = document.getElementById('search-input')?.value || '';
