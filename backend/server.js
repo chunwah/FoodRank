@@ -1157,8 +1157,10 @@ async function getPlaceDetails(placeId) {
           'currentOpeningHours',
           'priceLevel',
           'formattedAddress',
+          'shortFormattedAddress',
           'internationalPhoneNumber',
-          'websiteUri'
+          'websiteUri',
+          'photos'
         ].join(','),
         'Accept-Language': 'zh-TW'
       }

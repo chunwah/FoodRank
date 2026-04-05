@@ -355,6 +355,7 @@ let currentEmoji = '🍜';
 let currentSort = 'score'; // 'score' | 'distance' | 'rating' | 'reviews'
 let currentLang = 'zh';   // 'zh' | 'en'
 const isAdminMode = new URLSearchParams(window.location.search).get('admin') === '6';
+let _shuffledIndices = [];  // indices into foodItems for chips (0-6) + feat cards (7-10)
 
 // ============================================================
 // TRANSLATIONS
@@ -386,16 +387,27 @@ const LANG = {
     rainyHotpot: '下雨天嘛，不如直接吃火锅？还是你有其他想法？',
     favComing: '❤️ 收藏功能开发中', meComing: '👤 个人页面开发中',
     foodItems: [
-      { label:'炒粿条', search:'炒粿条', emoji:'🍜' },
-      { label:'叉烧饭', search:'叉烧饭', emoji:'🍖' },
-      { label:'肉骨茶', search:'肉骨茶', emoji:'🥩' },
-      { label:'云吞面', search:'云吞面', emoji:'🍝' },
-      { label:'沙爹',   search:'沙爹',   emoji:'🍢' },
-      { label:'椰浆饭', search:'椰浆饭', emoji:'🍛' },
-      { label:'螃蟹',   search:'霸王别姬', emoji:'🦀' },
+      { label:'炒粿条',   search:'炒粿条',   emoji:'🍜' },
+      { label:'叉烧饭',   search:'叉烧饭',   emoji:'🍖' },
+      { label:'肉骨茶',   search:'肉骨茶',   emoji:'🥩' },
+      { label:'云吞面',   search:'云吞面',   emoji:'🍝' },
+      { label:'沙爹',     search:'沙爹',     emoji:'🍢' },
+      { label:'椰浆饭',   search:'椰浆饭',   emoji:'🍛' },
+      { label:'螃蟹',     search:'螃蟹',     emoji:'🦀' },
+      { label:'叻沙',     search:'叻沙',     emoji:'🍲' },
+      { label:'福建面',   search:'福建面',   emoji:'🍜' },
+      { label:'海南鸡饭', search:'海南鸡饭', emoji:'🍚' },
+      { label:'咖喱饭',   search:'咖喱饭',   emoji:'🍛' },
+      { label:'烧鸭饭',   search:'烧鸭饭',   emoji:'🦆' },
+      { label:'辣炒板面', search:'辣炒板面', emoji:'🌶️' },
+      { label:'亚参叻沙', search:'亚参叻沙', emoji:'🐟' },
+      { label:'猪肉粥',   search:'猪肉粥',   emoji:'🥣' },
+      { label:'炸鸡',     search:'炸鸡',     emoji:'🍗' },
+      { label:'烤鱼',     search:'烤鱼',     emoji:'🐟' },
+      { label:'马来糕',   search:'马来糕',   emoji:'🍮' },
+      { label:'咖央吐司', search:'咖央吐司', emoji:'🍞' },
+      { label:'薄饼',     search:'薄饼',     emoji:'🫓' },
     ],
-    chipLabels: ['炒粿条','叉烧饭','肉骨茶','云吞面','沙爹','椰浆饭','螃蟹'],
-    featNames: ['炒粿条','叉烧饭','肉骨茶','云吞面'],
     mealTimes: ['🌅 早餐','☀️ 午餐','🌤️ 下午茶','🌙 晚餐','🌃 宵夜'],
     aiQuestions: [
       { id:'mood', text:'你今天的心情怎样？', options:['😄 开心，想庆祝','😌 平静，随便吃','😩 累了，要补一补','🌶️ 想吃点刺激的'] },
@@ -489,16 +501,27 @@ const LANG = {
     rainyHotpot: "Rainy day! How about hotpot to warm up? Or something else?",
     favComing: '❤️ Saved feature coming soon', meComing: '👤 Profile coming soon',
     foodItems: [
-      { label:'Char Kuey Teow', search:'Char Kuey Teow', emoji:'🍜' },
-      { label:'Char Siu Rice',  search:'Char Siu Rice',  emoji:'🍖' },
-      { label:'Bak Kut Teh',    search:'Bak Kut Teh',    emoji:'🥩' },
-      { label:'Wonton Noodles', search:'Wonton Noodles', emoji:'🍝' },
-      { label:'Satay',          search:'Satay',           emoji:'🍢' },
-      { label:'Nasi Lemak',     search:'Nasi Lemak',     emoji:'🍛' },
-      { label:'Crab',           search:'Crab',            emoji:'🦀' },
+      { label:'Char Kuey Teow',        search:'Char Kuey Teow',        emoji:'🍜' },
+      { label:'Char Siu Rice',         search:'Char Siu Rice',         emoji:'🍖' },
+      { label:'Bak Kut Teh',           search:'Bak Kut Teh',           emoji:'🥩' },
+      { label:'Wonton Noodles',        search:'Wonton Noodles',        emoji:'🍝' },
+      { label:'Satay',                 search:'Satay',                  emoji:'🍢' },
+      { label:'Nasi Lemak',            search:'Nasi Lemak',            emoji:'🍛' },
+      { label:'Crab',                  search:'Crab',                   emoji:'🦀' },
+      { label:'Laksa',                 search:'Laksa',                  emoji:'🍲' },
+      { label:'Hokkien Mee',           search:'Hokkien Mee',           emoji:'🍜' },
+      { label:'Hainanese Chicken Rice',search:'Hainanese Chicken Rice',emoji:'🍚' },
+      { label:'Curry Rice',            search:'Curry Rice',             emoji:'🍛' },
+      { label:'Roast Duck Rice',       search:'Roast Duck Rice',        emoji:'🦆' },
+      { label:'Spicy Pan Mee',         search:'Spicy Pan Mee',          emoji:'🌶️' },
+      { label:'Asam Laksa',            search:'Asam Laksa',             emoji:'🐟' },
+      { label:'Pork Congee',           search:'Pork Congee',            emoji:'🥣' },
+      { label:'Fried Chicken',         search:'Fried Chicken',          emoji:'🍗' },
+      { label:'Grilled Fish',          search:'Grilled Fish',           emoji:'🐟' },
+      { label:'Kaya Toast',            search:'Kaya Toast',             emoji:'🍞' },
+      { label:'Roti Canai',            search:'Roti Canai',             emoji:'🫓' },
+      { label:'Dim Sum',               search:'Dim Sum',                emoji:'🥟' },
     ],
-    chipLabels: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles','Satay','Nasi Lemak','Crab'],
-    featNames: ['Char Kuey Teow','Char Siu Rice','Bak Kut Teh','Wonton Noodles'],
     mealTimes: ['🌅 Breakfast','☀️ Lunch','🌤️ Afternoon Tea','🌙 Dinner','🌃 Supper'],
     aiQuestions: [
       { id:'mood', text:'How are you feeling today?', options:['😄 Happy, want to celebrate','😌 Chill, anything goes','😩 Tired, need energy','🌶️ Feeling adventurous'] },
@@ -587,7 +610,8 @@ function applyLang() {
   if (ht) ht.textContent = L.hotFood;
   const ex = document.getElementById('home-explore-title');
   if (ex) ex.textContent = L.explore;
-  document.querySelectorAll('.feat-score').forEach(el => el.textContent = L.nearbyRank);
+  // Food chip labels + featured card names — use shuffled indices
+  renderHomeItems();
   const ab = document.getElementById('home-about-title');
   if (ab) ab.textContent = L.aboutTitle;
   const ad = document.getElementById('home-about-desc');
@@ -613,14 +637,6 @@ function applyLang() {
   // Loading text
   const lm = document.getElementById('loading-main-text');
   if (lm) lm.textContent = L.loadingMain;
-  // Food chip labels + featured card names
-  document.querySelectorAll('.chip-label').forEach((el, i) => {
-    if (L.chipLabels[i]) el.textContent = L.chipLabels[i];
-  });
-  L.featNames.forEach((name, i) => {
-    const el = document.querySelector('.feat-name-' + i);
-    if (el) el.textContent = name;
-  });
   // AI screen
   const at = document.getElementById('ai-screen-title');
   if (at) at.textContent = L.aiTitle;
@@ -648,6 +664,8 @@ const CURRENCY_MAP = {
 window.addEventListener('load', () => {
   updateClock();
   setInterval(updateClock, 1000);
+  shuffleHomeItems();   // pick random food items for chips + featured cards
+  applyLang();          // render home chips + feat cards (calls renderHomeItems)
   getLocation();
 });
 
@@ -1119,6 +1137,75 @@ function quickSearchByIndex(i) {
   const item = t('foodItems')[i];
   if (!item) return;
   quickSearch(item.search, item.emoji);
+}
+
+// ── Randomised home chips + featured cards ──────────────────────
+const FEAT_COLORS = [
+  'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
+  'linear-gradient(135deg, #FCE4EC, #F8BBD9)',
+  'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
+  'linear-gradient(135deg, #E3F2FD, #BBDEFB)',
+  'linear-gradient(135deg, #F3E5F5, #E1BEE7)',
+  'linear-gradient(135deg, #E0F7FA, #B2EBF2)',
+  'linear-gradient(135deg, #FFFDE7, #FFF9C4)',
+  'linear-gradient(135deg, #FBE9E7, #FFCCBC)',
+  'linear-gradient(135deg, #E8EAF6, #C5CAE9)',
+  'linear-gradient(135deg, #F1F8E9, #DCEDC8)',
+  'linear-gradient(135deg, #FFF8E1, #FFECB3)',
+];
+
+function shuffleHomeItems() {
+  const total = t('foodItems').length;           // 20
+  const pool = Array.from({ length: total }, (_, i) => i);
+  // Fisher-Yates shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  _shuffledIndices = pool.slice(0, 11); // first 7 → chips, next 4 → feat cards
+}
+
+function renderHomeItems() {
+  if (_shuffledIndices.length < 11) shuffleHomeItems();
+  const items = t('foodItems');
+
+  // ── Chips (7 items) ──────────────────────────────────────────
+  const chipsEl = document.getElementById('home-chips');
+  if (chipsEl) {
+    chipsEl.innerHTML = '';
+    for (let slot = 0; slot < 7; slot++) {
+      const idx = _shuffledIndices[slot];
+      const item = items[idx];
+      if (!item) continue;
+      const chip = document.createElement('div');
+      chip.className = 'cat-chip';
+      chip.innerHTML = `${item.emoji} <span class="chip-label">${item.label}</span>`;
+      chip.onclick = () => quickSearchByIndex(idx);
+      chipsEl.appendChild(chip);
+    }
+  }
+
+  // ── Featured cards (4 items) ─────────────────────────────────
+  const featRow = document.querySelector('.featured-row');
+  if (featRow) {
+    featRow.innerHTML = '';
+    for (let slot = 7; slot < 11; slot++) {
+      const idx = _shuffledIndices[slot];
+      const item = items[idx];
+      if (!item) continue;
+      const color = FEAT_COLORS[idx % FEAT_COLORS.length];
+      const card = document.createElement('div');
+      card.className = 'feat-card';
+      card.innerHTML = `
+        <div class="feat-img" style="background:${color};">${item.emoji}</div>
+        <div class="feat-info">
+          <div class="feat-name">${item.label}</div>
+          <div class="feat-score">${t('nearbyRank')}</div>
+        </div>`;
+      card.onclick = () => quickSearchByIndex(idx);
+      featRow.appendChild(card);
+    }
+  }
 }
 
 // ============================================================
