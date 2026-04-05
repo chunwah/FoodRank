@@ -178,7 +178,7 @@
           <div class="app-logo">Food<span>Rank</span> 🍜</div>
           <div style="display:flex; align-items:center; gap:8px;">
             <button id="lang-toggle" onclick="toggleLang()" style="background:rgba(255,255,255,0.25); border:none; color:#fff; font-size:12px; font-weight:800; padding:5px 10px; border-radius:20px; cursor:pointer;">EN</button>
-            <div class="location-pill" id="location-pill" onclick="showToast('📍 获取位置中...')">📍 获取位置...</div>
+            <div class="location-pill" id="location-pill" onclick="showToast(t('toastGetLocation'))">📍 获取位置...</div>
           </div>
         </div>
         <div class="search-bar" onclick="openSearch()">
@@ -282,7 +282,7 @@
     </div>
 
     <div style="padding: 8px 16px 4px; font-size: 13px; color: #888;" id="search-summary">
-      📍 <span id="search-location-text">获取位置中...</span>
+      📍 <span id="search-location-text">...</span>
     </div>
 
     <div class="scroll-area">
@@ -316,7 +316,10 @@
   <div class="screen" id="screen-detail">
     <div class="nav-abs">
       <button class="nav-back" onclick="goBack()" style="background: rgba(255,255,255,0.9);">←</button>
-      <button class="nav-back" onclick="showToast('❤️ 已收藏！')" style="background: rgba(255,255,255,0.9); font-size: 20px;">♡</button>
+      <div style="display:flex; gap:8px;">
+        <button class="nav-back" onclick="showToast(t('toastSaved'))" style="background: rgba(255,255,255,0.9); font-size: 20px;">♡</button>
+        <button class="nav-back" id="share-btn" onclick="shareRestaurant()" style="background: rgba(255,255,255,0.9); font-size: 18px;">↗</button>
+      </div>
     </div>
 
     <div class="detail-body" id="detail-body">
@@ -403,6 +406,62 @@ const LANG = {
     greetWeatherRain: '☔ 我看到你那边**正在下雨**！',
     greetWeatherSun: '☀️ 今天天气不错！',
     greetMain: (meal, weather) => `你好！我是 FoodRank AI 🤖${weather}\n\n我看现在是${meal}时间，对吗？`,
+    // Detail page
+    reviews: '条评论', platformBreakdown: '各平台评分',
+    loading: '加载中…', searching: '搜索中…',
+    googleReviews: '🟢 Google 评论', noTextReview: '（无文字评论）',
+    noGoogleReviews: '暂无评论', googleReviewsNote: 'Google Places API 最多显示 5 条最新评论',
+    reviewLoadFail: '评论加载失败',
+    igSearching: '正在搜索 Instagram...', igNone: 'Instagram 暂无相关帖子', igLoadFail: 'Instagram 加载失败',
+    klfSearching: '正在搜索 KLFoodie...', klfNone: 'KLFoodie 暂无相关页面', klfLoadFail: 'KLFoodie 加载失败',
+    klfViewOn: '🔗 在 KLFoodie 查看 →', klfRatings: '条评价',
+    ttSearching: '正在搜索 TikTok...', ttNone: '暂无 TikTok 视频', ttLoadFail: 'TikTok 加载失败',
+    ttWatchHint: '点击卡片前往 TikTok 观看',
+    ytSearching: '正在搜索 YouTube...', ytNone: '暂时没有相关 YouTube 视频', ytLoadFail: 'YouTube 加载失败',
+    ytAreaMatch: '⚠️ 显示为区域相关视频，非该档口专属',
+    ytNameMatch: '📍 按档口名称搜索结果', ytDirectMatch: '✅ 直接相关视频',
+    xhsTitle: '📕 小红书', xhsSearching: '正在加载小红书...', xhsNone: '暂无小红书笔记', xhsLoadFail: '小红书加载失败',
+    xhsDefaultTitle: '小红书笔记', xhsDefaultAuthor: '小红书',
+    xhsAddForm: '➕ 添加小红书链接', xhsUrlPlaceholder: '小红书链接 URL *',
+    xhsTitlePlaceholder: '标题（可选）', xhsAuthorPlaceholder: '作者名（可选）',
+    xhsFoodRankLabel: '这是 FoodRank 官方帖子',
+    xhsSaveBtn: '保存链接', xhsDeleteBtn: '删除', xhsDeleteConfirm: '确定删除这条链接？',
+    xhsSaved: '✅ 链接已保存！', xhsDeleted: '🗑️ 已删除', xhsAlreadyExists: '该链接已存在',
+    // Coming soon
+    comingSoon: '🚀 更多平台即将上线', comingSoonSub: '我们正在接入以下平台的数据',
+    navigate: '🗺️ 导航去这里', copyPlaceId: '📋 复制 Place ID',
+    // Area badge
+    areaBadge: '区域',
+    // Sentiment
+    sentimentPos: '好评', sentimentNeutral: '中立',
+    // Results
+    foundResults: (n) => `找到 ${n} 家`,
+    currentLocation: '当前位置',
+    // Toasts
+    toastGetLocation: '📍 获取位置中...',
+    toastSaved: '❤️ 已收藏！',
+    toastLinkCopied: '🔗 链接已复制！',
+    toastCopyFail: '❌ 复制失败',
+    toastPlaceIdCopied: '✅ Place ID 已复制！',
+    toastNetworkError: '❌ 网络错误，请重试',
+    toastSaveFail: '❌ 保存失败',
+    toastDeleteFail: '❌ 删除失败',
+    toastUrlRequired: '⚠️ 请填写链接 URL',
+    toastUrlInvalid: '⚠️ 请输入有效的 URL',
+    toastOpening: (name) => `🔍 正在打开 ${name || '餐厅'}...`,
+    toastLoadFail: '❌ 无法加载餐厅信息',
+    toastSearchRequired: '请输入食物名称',
+    toastSearchTimeout: '⏱️ 搜索超时，请检查网络后重试',
+    toastInvalidData: '❌ 服务器返回了无效数据，请重试',
+    toastConnectFail: '❌ 无法连接到服务器',
+    // Share
+    shareText: (name, info) => `🍽️ ${name}\n${info}\n\n在 FoodRank 查看这家餐厅的所有平台评价 👇`,
+    // Misc
+    noRating: '暂无评分', none: '暂无', loadFailed: '加载失败',
+    videos: (n) => `${n} 个`,
+    posts: (n) => `${n} 篇`,
+    notes: (n) => `${n} 篇笔记`,
+    adminPlaceId: '🔑 ADMIN — Place ID',
   },
   en: {
     searchBar: "What do you feel like eating?",
@@ -450,6 +509,62 @@ const LANG = {
     greetWeatherRain: '☔ I can see it\'s **raining** where you are!',
     greetWeatherSun: '☀️ Nice weather today!',
     greetMain: (meal, weather) => `Hi! I'm FoodRank AI 🤖${weather}\n\nLooks like it's ${meal} time — shall I help you decide what to eat?`,
+    // Detail page
+    reviews: 'reviews', platformBreakdown: 'Platform Ratings',
+    loading: 'Loading...', searching: 'Searching...',
+    googleReviews: '🟢 Google Reviews', noTextReview: '(No written review)',
+    noGoogleReviews: 'No reviews yet', googleReviewsNote: 'Google Places API shows up to 5 recent reviews',
+    reviewLoadFail: 'Failed to load reviews',
+    igSearching: 'Searching Instagram...', igNone: 'No Instagram posts found', igLoadFail: 'Instagram failed to load',
+    klfSearching: 'Searching KLFoodie...', klfNone: 'No KLFoodie pages found', klfLoadFail: 'KLFoodie failed to load',
+    klfViewOn: '🔗 View on KLFoodie →', klfRatings: 'ratings',
+    ttSearching: 'Searching TikTok...', ttNone: 'No TikTok videos found', ttLoadFail: 'TikTok failed to load',
+    ttWatchHint: 'Tap a card to watch on TikTok',
+    ytSearching: 'Searching YouTube...', ytNone: 'No YouTube videos found', ytLoadFail: 'YouTube failed to load',
+    ytAreaMatch: '⚠️ Showing area-related videos, not specific to this restaurant',
+    ytNameMatch: '📍 Results by restaurant name', ytDirectMatch: '✅ Directly related videos',
+    xhsTitle: '📕 Xiaohongshu', xhsSearching: 'Loading Xiaohongshu...', xhsNone: 'No Xiaohongshu posts', xhsLoadFail: 'Xiaohongshu failed to load',
+    xhsDefaultTitle: 'Xiaohongshu Post', xhsDefaultAuthor: 'Xiaohongshu',
+    xhsAddForm: '➕ Add Xiaohongshu Link', xhsUrlPlaceholder: 'Xiaohongshu URL *',
+    xhsTitlePlaceholder: 'Title (optional)', xhsAuthorPlaceholder: 'Author (optional)',
+    xhsFoodRankLabel: 'This is an official FoodRank post',
+    xhsSaveBtn: 'Save Link', xhsDeleteBtn: 'Delete', xhsDeleteConfirm: 'Delete this link?',
+    xhsSaved: '✅ Link saved!', xhsDeleted: '🗑️ Deleted', xhsAlreadyExists: 'This link already exists',
+    // Coming soon
+    comingSoon: '🚀 More platforms coming soon', comingSoonSub: 'We\'re integrating more platforms',
+    navigate: '🗺️ Navigate here', copyPlaceId: '📋 Copy Place ID',
+    // Area badge
+    areaBadge: 'Area',
+    // Sentiment
+    sentimentPos: 'Positive', sentimentNeutral: 'Neutral',
+    // Results
+    foundResults: (n) => `Found ${n} restaurant${n === 1 ? '' : 's'}`,
+    currentLocation: 'Current Location',
+    // Toasts
+    toastGetLocation: '📍 Getting location...',
+    toastSaved: '❤️ Saved!',
+    toastLinkCopied: '🔗 Link copied!',
+    toastCopyFail: '❌ Copy failed',
+    toastPlaceIdCopied: '✅ Place ID copied!',
+    toastNetworkError: '❌ Network error, please retry',
+    toastSaveFail: '❌ Save failed',
+    toastDeleteFail: '❌ Delete failed',
+    toastUrlRequired: '⚠️ Please enter a URL',
+    toastUrlInvalid: '⚠️ Please enter a valid URL',
+    toastOpening: (name) => `🔍 Opening ${name}...`,
+    toastLoadFail: '❌ Could not load restaurant info',
+    toastSearchRequired: 'Please enter a food name',
+    toastSearchTimeout: '⏱️ Search timed out, please check your connection',
+    toastInvalidData: '❌ Invalid data from server, please retry',
+    toastConnectFail: '❌ Cannot connect to server',
+    // Share
+    shareText: (name, info) => `🍽️ ${name}\n${info}\n\nSee all platform reviews on FoodRank 👇`,
+    // Misc
+    noRating: 'No rating', none: 'None', loadFailed: 'Load failed',
+    videos: (n) => `${n} video${n === 1 ? '' : 's'}`,
+    posts: (n) => `${n} post${n === 1 ? '' : 's'}`,
+    notes: (n) => `${n} note${n === 1 ? '' : 's'}`,
+    adminPlaceId: '🔑 ADMIN — Place ID',
   }
 };
 
@@ -588,8 +703,8 @@ async function detectCountry(lat, lng) {
     // Reverse geocode failed, keep defaults but still use coordinates
     console.log('Country detection failed, defaulting to MY');
     userCountryCode = 'MY';
-    document.getElementById('location-pill').textContent = '📍 当前位置 ✓';
-    document.getElementById('search-location-text').textContent = '当前位置';
+    document.getElementById('location-pill').textContent = `📍 ${t('currentLocation')} ✓`;
+    document.getElementById('search-location-text').textContent = t('currentLocation');
   }
 }
 
@@ -689,62 +804,79 @@ async function fetchWeather(lat, lng) {
 // Food recommendation matrix
 function getRecommendation(answers) {
   const { mood, base, flavor, budget, meal, weather } = answers;
+  const isEN = currentLang === 'en';
 
-  // Rule-based recommendation
-  const isMorning = meal.includes('早');
-  const isAfternoon = meal.includes('下午');
-  const isLate = meal.includes('宵');
-  const isRainy = weather?.isRainy;
-  const isRice = base.includes('饭');
-  const isNoodle = base.includes('面') || base.includes('粿');
-  const isPorridge = base.includes('粥');
-  const isSpicy = flavor.includes('辣');
-  const isSour = flavor.includes('酸');
-  const isRich = flavor.includes('浓');
-  const isLight = flavor.includes('清淡');
-  const isBudget = budget.includes('<');
-  const isTired = mood.includes('累');
-  const isCelebrate = mood.includes('开心');
-  const isAdventure = mood.includes('刺激');
+  // Language-agnostic matching using option index position
+  const mealTimes = t('mealTimes'); // e.g. ['🌅 Breakfast', ...]
+  const isMorning   = meal === mealTimes[0];
+  const isAfternoon = meal === mealTimes[2];
+  const isLate      = meal === mealTimes[4];
+  const isRainy     = weather?.isRainy;
 
-  // Decision tree
+  // base: index 0=Noodles, 1=Rice, 2=Porridge/Soup, 3=Anything
+  const baseOpts = t('aiQuestions')[1].options;
+  const isNoodle   = base === baseOpts[0];
+  const isRice     = base === baseOpts[1];
+  const isPorridge = base === baseOpts[2];
+
+  // flavor: index 0=Spicy, 1=Sour, 2=Rich, 3=Light
+  const flavorOpts = t('aiQuestions')[2].options;
+  const isSpicy = flavor === flavorOpts[0];
+  const isSour  = flavor === flavorOpts[1];
+  const isRich  = flavor === flavorOpts[2];
+  const isLight = flavor === flavorOpts[3];
+
+  // budget: index 0=Budget, 1=Mid, 2=Splurge
+  const budgetOpts = t('aiQuestions')[3].options;
+  const isBudget = budget === budgetOpts[0];
+
+  // mood: index 0=Happy/Celebrate, 1=Chill, 2=Tired, 3=Adventurous
+  const moodOpts = t('aiQuestions')[0].options;
+  const isCelebrate = mood === moodOpts[0];
+  const isTired     = mood === moodOpts[2];
+  const isAdventure = mood === moodOpts[3];
+
+  // Decision tree — bilingual food names & reasons
+  const rec = (zhFood, enFood, emoji, zhReason, enReason) => ({
+    food: isEN ? enFood : zhFood,
+    emoji,
+    reason: isEN ? enReason : zhReason,
+  });
+
   if (isRainy) {
-    if (isSpicy) return { food: '火锅', emoji: '🫕', reason: '下雨天最适合吃辣辣的火锅，暖身又过瘾！' };
-    if (isLight) return { food: '肉骨茶', emoji: '🫕', reason: '雨天来一锅热腾腾的肉骨茶，全身暖和！' };
-    if (isNoodle) return { food: '汤面', emoji: '🍜', reason: '雨天最适合来一碗热汤面，暖胃暖心！' };
-    return { food: '火锅', emoji: '🫕', reason: '下雨天了，围炉吃火锅最幸福！' };
+    if (isSpicy)  return rec('火锅','Hotpot','🫕','下雨天最适合吃辣辣的火锅，暖身又过瘾！','Nothing beats a spicy hotpot on a rainy day!');
+    if (isLight)  return rec('肉骨茶','Bak Kut Teh','🫕','雨天来一锅热腾腾的肉骨茶，全身暖和！','Warm up with a comforting bowl of Bak Kut Teh!');
+    if (isNoodle) return rec('汤面','Soup Noodles','🍜','雨天最适合来一碗热汤面，暖胃暖心！','A hot bowl of soup noodles is perfect for rainy weather!');
+    return rec('火锅','Hotpot','🫕','下雨天了，围炉吃火锅最幸福！','Gather around a hotpot on this rainy day — pure bliss!');
   }
   if (isAfternoon) {
-    return { food: '白咖啡', emoji: '☕', reason: '下午茶时间！来杯白咖啡配点心，放松一下～' };
+    return rec('白咖啡','White Coffee','☕','下午茶时间！来杯白咖啡配点心，放松一下～','Afternoon tea time! A smooth white coffee with snacks is perfect.');
   }
   if (isMorning) {
-    if (isPorridge || isLight) return { food: '粥', emoji: '🥣', reason: '早上来一碗暖暖的粥，开启美好的一天！' };
-    if (isNoodle) return { food: '福建面', emoji: '🍜', reason: '早晨来一碗热腾腾的福建面，精神满满！' };
-    return { food: '咖央吐司', emoji: '🍞', reason: '经典马来西亚早餐，配一杯 Kopi！' };
+    if (isPorridge || isLight) return rec('粥','Congee','🥣','早上来一碗暖暖的粥，开启美好的一天！','Start your morning right with a warm bowl of congee!');
+    if (isNoodle) return rec('福建面','Hokkien Mee','🍜','早晨来一碗热腾腾的福建面，精神满满！','Kick off your morning with a flavourful plate of Hokkien Mee!');
+    return rec('咖央吐司','Kaya Toast','🍞','经典马来西亚早餐，配一杯 Kopi！','A classic Malaysian breakfast — kaya toast with a hot Kopi!');
   }
   if (isLate) {
-    if (isSpicy) return { food: '辣炒板面', emoji: '🍜', reason: '宵夜就要吃点刺激的，辣炒板面超过瘾！' };
-    if (isNoodle) return { food: '叉烧面', emoji: '🍜', reason: '宵夜来一碗叉烧面，简单满足！' };
-    return { food: '炒粿条', emoji: '🍜', reason: '宵夜经典选择，镬气十足！' };
+    if (isSpicy)  return rec('辣炒板面','Spicy Pan Mee','🍜','宵夜就要吃点刺激的，辣炒板面超过瘾！','Spicy pan mee is the ultimate late-night kick!');
+    if (isNoodle) return rec('叉烧面','Char Siu Noodles','🍜','宵夜来一碗叉烧面，简单满足！','A simple and satisfying bowl of char siu noodles for supper!');
+    return rec('炒粿条','Char Kuey Teow','🍜','宵夜经典选择，镬气十足！','Classic late-night choice — wok-fired Char Kuey Teow!');
   }
-  if (isPorridge) {
-    return { food: '猪肉粥', emoji: '🥣', reason: '清淡又营养，最适合今天的你！' };
-  }
-  if (isSpicy && isNoodle) return { food: '叻沙', emoji: '🍜', reason: '辣辣的叻沙，今天就要它！' };
-  if (isSpicy && isRice) return { food: '咖喱饭', emoji: '🍛', reason: '浓郁咖喱配白饭，太满足了！' };
-  if (isSour) return { food: '亚参叻沙', emoji: '🍜', reason: '酸酸开胃的亚参叻沙，一口就爱上！' };
-  if (isRich && isNoodle) return { food: '福建面', emoji: '🍜', reason: '黑黑浓郁的福建面，镬气十足！' };
-  if (isRich && isRice) return { food: '肉骨茶', emoji: '🫕', reason: '浓郁药材猪骨汤配饭，滋补又美味！' };
-  if (isLight && isNoodle) return { food: '云吞面', emoji: '🍜', reason: '清爽的云吞面，简单好味道！' };
-  if (isLight && isRice) return { food: '海南鸡饭', emoji: '🍚', reason: '清淡鲜嫩的海南鸡饭，百吃不厌！' };
-  if (isCelebrate && !isBudget) return { food: '烤鱼', emoji: '🐟', reason: '今天开心就要吃大餐，烤鱼走起！' };
-  if (isTired) return { food: '肉骨茶', emoji: '🫕', reason: '累了就要补一补，肉骨茶最滋补！' };
-  if (isAdventure) return { food: '炒粿条', emoji: '🍜', reason: '镬气十足的炒粿条，今天就要刺激！' };
-  if (isRice) return { food: '椰浆饭', emoji: '🍚', reason: '马来西亚灵魂食物，永远不会错！' };
-  if (isNoodle) return { food: '炒粿条', emoji: '🍜', reason: '经典马来西亚炒粿条，镬气满满！' };
+  if (isPorridge) return rec('猪肉粥','Pork Congee','🥣','清淡又营养，最适合今天的你！','Light yet nourishing — perfect for how you feel today!');
+  if (isSpicy && isNoodle) return rec('叻沙','Laksa','🍜','辣辣的叻沙，今天就要它！','Spicy, creamy laksa — exactly what you need today!');
+  if (isSpicy && isRice)   return rec('咖喱饭','Curry Rice','🍛','浓郁咖喱配白饭，太满足了！','Rich, fragrant curry with rice — so satisfying!');
+  if (isSour)              return rec('亚参叻沙','Asam Laksa','🍜','酸酸开胃的亚参叻沙，一口就爱上！','Tangy and appetising Asam Laksa — one bite and you\'re hooked!');
+  if (isRich && isNoodle)  return rec('福建面','Hokkien Mee','🍜','黑黑浓郁的福建面，镬气十足！','Dark, bold Hokkien Mee with amazing wok hei!');
+  if (isRich && isRice)    return rec('肉骨茶','Bak Kut Teh','🫕','浓郁药材猪骨汤配饭，滋补又美味！','Rich herbal pork bone soup with rice — nourishing and delicious!');
+  if (isLight && isNoodle) return rec('云吞面','Wonton Noodles','🍜','清爽的云吞面，简单好味道！','Light and clean wonton noodles — simply delightful!');
+  if (isLight && isRice)   return rec('海南鸡饭','Hainanese Chicken Rice','🍚','清淡鲜嫩的海南鸡饭，百吃不厌！','Silky smooth Hainanese chicken rice — you can never go wrong!');
+  if (isCelebrate && !isBudget) return rec('烤鱼','Grilled Fish','🐟','今天开心就要吃大餐，烤鱼走起！','Feeling celebratory? Treat yourself to a grilled fish feast!');
+  if (isTired)    return rec('肉骨茶','Bak Kut Teh','🫕','累了就要补一补，肉骨茶最滋补！','Tired? Let Bak Kut Teh restore your energy!');
+  if (isAdventure) return rec('炒粿条','Char Kuey Teow','🍜','镬气十足的炒粿条，今天就要刺激！','Go bold with a sizzling plate of Char Kuey Teow!');
+  if (isRice)   return rec('椰浆饭','Nasi Lemak','🍚','马来西亚灵魂食物，永远不会错！','Malaysia\'s soul food — Nasi Lemak never disappoints!');
+  if (isNoodle) return rec('炒粿条','Char Kuey Teow','🍜','经典马来西亚炒粿条，镬气满满！','Classic Malaysian Char Kuey Teow with irresistible wok hei!');
 
-  // Default
-  return { food: '炒粿条', emoji: '🍜', reason: '万能推荐！今天就来一盘镬气十足的炒粿条吧！' };
+  return rec('炒粿条','Char Kuey Teow','🍜','万能推荐！今天就来一盘镬气十足的炒粿条吧！','Our all-time recommendation — a sizzling plate of Char Kuey Teow!');
 }
 
 let aiAnswers = {};
@@ -994,7 +1126,7 @@ function quickSearchByIndex(i) {
 // ============================================================
 async function doSearch() {
   const food = document.getElementById('search-input').value.trim();
-  if (!food) { showToast('请输入食物名称'); return; }
+  if (!food) { showToast(t('toastSearchRequired')); return; }
 
   if (!userLat || !userLng) setDefaultLocation();
 
@@ -1050,11 +1182,11 @@ async function doSearch() {
     console.error(`❌ doSearch network error — name: "${err.name}", message: "${err.message}"`);
 
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-      showToast('⏱️ 搜索超时，请检查网络后重试');
+      showToast(t('toastSearchTimeout'));
     } else if (err.name === 'SyntaxError') {
-      showToast('❌ 服务器返回了无效数据，请重试');
+      showToast(t('toastInvalidData'));
     } else {
-      showToast('❌ 无法连接到服务器，请确保 npm start 正在运行');
+      showToast(t('toastConnectFail'));
     }
     return;
   }
@@ -1114,7 +1246,7 @@ function renderSortedResults() {
           <div class="rank-name">${escHtml(r.name)}</div>
           <div class="rank-meta">📍 ${r.distanceText ? r.distanceText + ' · ' : ''}${escHtml(r.address.split(',')[0])} ${openBadge}</div>
           <div class="platform-scores">
-            ${r.googleRating ? `<div class="plat-badge google">🟢 G ${r.googleRating.toFixed(1)} (${formatCount(r.googleReviewCount)})</div>` : '<div class="plat-badge" style="color:#aaa;">暂无评分</div>'}
+            ${r.googleRating ? `<div class="plat-badge google">🟢 G ${r.googleRating.toFixed(1)} (${formatCount(r.googleReviewCount)})</div>` : `<div class="plat-badge" style="color:#aaa;">${t('noRating')}</div>`}
             ${r.priceLevel ? `<div class="plat-badge">${r.priceLevel}</div>` : ''}
           </div>
         </div>
@@ -1133,9 +1265,9 @@ function renderResults(data) {
   const summary = document.getElementById('search-summary');
 
   // Use JS variables (not DOM element) — the span gets destroyed when summary.innerHTML is overwritten
-  const locText = userCountryName || '当前位置';
+  const locText = userCountryName || t('currentLocation');
   const currInfo = CURRENCY_MAP[data.countryCode] || CURRENCY_MAP['MY'];
-  summary.innerHTML = `🤖 「<strong style="color:#111;">${escHtml(data.query)}</strong>」· 找到 ${data.total} 家 · ${currInfo.flag} ${escHtml(locText)} · <strong style="color:#FF6B35;">${currInfo.symbol}</strong>`;
+  summary.innerHTML = `🤖 「<strong style="color:#111;">${escHtml(data.query)}</strong>」· ${t('foundResults')(data.total)} · ${currInfo.flag} ${escHtml(locText)} · <strong style="color:#FF6B35;">${currInfo.symbol}</strong>`;
 
   if (!data.results || data.results.length === 0) {
     list.innerHTML = `
@@ -1198,11 +1330,11 @@ function goToDetail(index) {
         <div class="agg-right">
           <div class="agg-label">🟢 Google Reviews</div>
           <div class="agg-stars">${starsStr}</div>
-          <div class="agg-count">${formatCount(r.googleReviewCount)} 条评论</div>
+          <div class="agg-count">${formatCount(r.googleReviewCount)} ${t('reviews')}</div>
         </div>
       </div>
 
-      <div style="font-size:14px; font-weight:800; color:#333; margin-bottom:12px;">各平台评分</div>
+      <div style="font-size:14px; font-weight:800; color:#333; margin-bottom:12px;">${t('platformBreakdown')}</div>
       <div class="platform-breakdown">
         <div class="plat-row">
           <div class="plat-icon-big" style="background:#e8f5e9;">🟢</div>
@@ -1214,35 +1346,35 @@ function goToDetail(index) {
         <div class="plat-row" id="ig-plat-row">
           <div class="plat-icon-big" style="background:#fce4ec;">📸</div>
           <div class="plat-name">Instagram</div>
-          <div class="plat-count" id="ig-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-count" id="ig-plat-count" style="color:#aaa;">${t('loading')}</div>
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="ig-plat-bar" style="width:0%; background:linear-gradient(90deg,#833ab4,#fd1d1d,#fcb045);"></div></div>
           <div class="plat-score-val" id="ig-plat-score" style="color:#ddd;">…</div>
         </div>
         <div class="plat-row" id="tt-plat-row">
           <div class="plat-icon-big" style="background:#f0f0ff;">🎵</div>
           <div class="plat-name">TikTok</div>
-          <div class="plat-count" id="tt-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-count" id="tt-plat-count" style="color:#aaa;">${t('loading')}</div>
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="tt-plat-bar" style="width:0%; background:linear-gradient(90deg,#010101,#69C9D0);"></div></div>
           <div class="plat-score-val" id="tt-plat-score" style="color:#ddd;">…</div>
         </div>
         <div class="plat-row" id="klf-plat-row">
           <div class="plat-icon-big" style="background:#fff8e1;">🍽️</div>
           <div class="plat-name">KLFoodie</div>
-          <div class="plat-count" id="klf-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-count" id="klf-plat-count" style="color:#aaa;">${t('loading')}</div>
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="klf-plat-bar" style="width:0%; background:linear-gradient(90deg,#f57c00,#ffa726);"></div></div>
           <div class="plat-score-val" id="klf-plat-score" style="color:#ddd;">…</div>
         </div>
         <div class="plat-row" id="yt-plat-row">
           <div class="plat-icon-big" style="background:#fff3e0;">📺</div>
           <div class="plat-name">YouTube</div>
-          <div class="plat-count" id="yt-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-count" id="yt-plat-count" style="color:#aaa;">${t('loading')}</div>
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="yt-plat-bar" style="width:0%; background:linear-gradient(90deg,#FF0000,#FF5722);"></div></div>
           <div class="plat-score-val" id="yt-plat-score" style="color:#ddd;">…</div>
         </div>
         <div class="plat-row" id="xhs-plat-row">
           <div class="plat-icon-big" style="background:#fff0f0;">📕</div>
-          <div class="plat-name">小红书</div>
-          <div class="plat-count" id="xhs-plat-count" style="color:#aaa;">加载中…</div>
+          <div class="plat-name">${currentLang === 'zh' ? '小红书' : 'XHS'}</div>
+          <div class="plat-count" id="xhs-plat-count" style="color:#aaa;">${t('loading')}</div>
           <div class="plat-bar-wrap"><div class="plat-bar-fill" id="xhs-plat-bar" style="width:0%; background:linear-gradient(90deg,#ff2442,#ff6b81);"></div></div>
           <div class="plat-score-val" id="xhs-plat-score" style="color:#ddd;">…</div>
         </div>
@@ -1251,75 +1383,70 @@ function goToDetail(index) {
 
     <div class="divider"></div>
 
-    <div class="section-header">🟢 Google 评论</div>
+    <div class="section-header">${t('googleReviews')}</div>
     <div class="review-list" id="google-reviews-container">
       <div style="text-align:center; padding:24px; color:#bbb;">
         <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-        <div style="font-size:13px;">正在加载 Google 评论...</div>
+        <div style="font-size:13px;">${t('igSearching').replace('Instagram', 'Google')}</div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- Instagram section — populated by loadInstagramPosts() after render -->
     <div id="ig-section">
       <div class="section-header">📸 Instagram</div>
       <div id="ig-posts-container" style="padding: 0 16px 16px; display:flex; flex-direction:column; gap:10px;">
         <div style="text-align:center; padding:20px; color:#bbb;">
           <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-          <div style="font-size:13px;">正在搜索 Instagram...</div>
+          <div style="font-size:13px;">${t('igSearching')}</div>
         </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- KLFoodie section — populated by loadKLFoodie() after render -->
     <div id="klf-section">
       <div class="section-header">🍽️ KLFoodie</div>
       <div id="klf-posts-container" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:10px;">
         <div style="text-align:center; padding:20px; color:#bbb;">
           <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-          <div style="font-size:13px;">正在搜索 KLFoodie...</div>
+          <div style="font-size:13px;">${t('klfSearching')}</div>
         </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- TikTok section — populated by loadTikTokVideos() after render -->
     <div id="tt-section">
-      <div class="section-header">🎵 TikTok 视频</div>
+      <div class="section-header">🎵 TikTok</div>
       <div id="tt-videos-container" style="padding:0 16px 16px;">
         <div style="text-align:center; padding:20px; color:#bbb;">
           <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-          <div style="font-size:13px;">正在搜索 TikTok...</div>
+          <div style="font-size:13px;">${t('ttSearching')}</div>
         </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- YouTube section — populated by loadYouTubeVideos() after render -->
     <div id="yt-section">
-      <div class="section-header">📺 YouTube 视频</div>
+      <div class="section-header">📺 YouTube</div>
       <div id="yt-videos-container" style="padding:0 16px 16px;">
         <div style="text-align:center; padding:20px; color:#bbb;">
           <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-          <div style="font-size:13px;">正在搜索 YouTube...</div>
+          <div style="font-size:13px;">${t('ytSearching')}</div>
         </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- XHS (小红书) section — populated by loadXhsLinks() after render -->
     <div id="xhs-section">
-      <div class="section-header">📕 小红书</div>
+      <div class="section-header">${t('xhsTitle')}</div>
       <div id="xhs-posts-container" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:10px;">
         <div style="text-align:center; padding:20px; color:#bbb;">
           <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-          <div style="font-size:13px;">正在加载小红书...</div>
+          <div style="font-size:13px;">${t('xhsSearching')}</div>
         </div>
       </div>
     </div>
@@ -1327,8 +1454,8 @@ function goToDetail(index) {
     <div class="divider"></div>
 
     <div class="coming-soon-banner">
-      <div class="cs-title">🚀 更多平台即将上线</div>
-      <div style="font-size:12px; color:#888;">我们正在接入以下平台的数据</div>
+      <div class="cs-title">${t('comingSoon')}</div>
+      <div style="font-size:12px; color:#888;">${t('comingSoonSub')}</div>
       <div class="cs-platforms">
         <div class="cs-plat">📘 Facebook</div>
         <div class="cs-plat">🗺️ Yelp</div>
@@ -1337,19 +1464,21 @@ function goToDetail(index) {
     </div>
 
     <button class="open-app-btn" onclick="openMaps('${escHtml(r.name)}', ${r.id ? '"' + r.id + '"' : 'null'})">
-      🗺️ 导航去这里
+      ${t('navigate')}
     </button>
     ${isAdminMode && r.id ? `
     <div style="margin:8px 16px 16px; padding:10px 14px; background:#fff8e1; border:1px dashed #ffc107; border-radius:12px;">
-      <div style="font-size:10px; color:#f57c00; font-weight:700; margin-bottom:4px;">🔑 ADMIN — Place ID</div>
+      <div style="font-size:10px; color:#f57c00; font-weight:700; margin-bottom:4px;">${t('adminPlaceId')}</div>
       <div style="font-size:11px; color:#555; font-family:monospace; word-break:break-all; margin-bottom:8px;">${r.id}</div>
-      <button onclick="copyPlaceId('${r.id}')" style="width:100%; padding:7px; background:#ffc107; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:#333;">📋 复制 Place ID</button>
+      <button onclick="copyPlaceId('${r.id}')" style="width:100%; padding:7px; background:#ffc107; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:#333;">${t('copyPlaceId')}</button>
     </div>
     ` : ''}
   `;
 
   document.getElementById('detail-body').innerHTML = body;
   document.getElementById('detail-body').scrollTop = 0;
+  // Store current restaurant for share button
+  window._currentRestaurant = r;
   showScreen('detail');
 
   // Load all platform data asynchronously in parallel after page renders
@@ -1377,13 +1506,13 @@ async function loadGoogleReviews(placeId) {
     const reviews = data.reviews || [];
 
     if (reviews.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">暂无文字评论</div>`;
+      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('noTextReview')}</div>`;
       return;
     }
 
     const sectionHeader = document.querySelector('#screen-detail .section-header');
     if (sectionHeader && sectionHeader.textContent.includes('Google')) {
-      sectionHeader.textContent = `🟢 Google 评论 (${reviews.length})`;
+      sectionHeader.textContent = `${t('googleReviews')} (${reviews.length})`;
     }
 
     container.innerHTML = reviews.map(r => {
@@ -1405,14 +1534,14 @@ async function loadGoogleReviews(placeId) {
             </div>
             <div class="review-stars">${revStars}</div>
           </div>
-          <div class="review-text">${escHtml(text || '（无文字评论）')}</div>
+          <div class="review-text">${escHtml(text || t('noTextReview'))}</div>
           <div class="review-date">${escHtml(time)}</div>
         </div>`;
-    }).join('') + `<div style="padding:8px; text-align:center; font-size:12px; color:#aaa;">Google Places API 最多显示 5 条最新评论</div>`;
+    }).join('') + `<div style="padding:8px; text-align:center; font-size:12px; color:#aaa;">${t('googleReviewsNote')}</div>`;
 
   } catch (err) {
     console.error('Google reviews load error:', err);
-    container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">评论加载失败</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('reviewLoadFail')}</div>`;
   }
 }
 
@@ -1436,14 +1565,14 @@ async function loadInstagramPosts(restaurantName, food, city) {
       const barW = data.avgScore ? (data.avgScore / 5 * 100).toFixed(0) : Math.min(data.total * 12, 100);
       if (platScore) { platScore.textContent = data.avgScore ? data.avgScore.toFixed(1) : data.total + ''; platScore.style.color = '#833ab4'; }
       if (platBar)   platBar.style.width = barW + '%';
-      if (platCount) { platCount.textContent = `${data.total} 篇`; platCount.style.color = '#aaa'; }
+      if (platCount) { platCount.textContent = `${t('posts')(data.total)}`; platCount.style.color = '#aaa'; }
     } else {
       if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ddd'; }
-      if (platCount) platCount.textContent = '暂无';
+      if (platCount) platCount.textContent = t('none');
     }
 
     if (!data.posts || data.posts.length === 0) {
-      container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">Instagram 暂无相关帖子</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('igNone')}</div>`;
       return;
     }
 
@@ -1453,9 +1582,9 @@ async function loadInstagramPosts(restaurantName, food, city) {
         : `<div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">📸</div>`;
 
       const sentimentColor = post.sentiment >= 4.5 ? '#833ab4' : post.sentiment >= 4.0 ? '#fd1d1d' : '#888';
-      const sentimentLabel = post.sentiment >= 4.5 ? '好评' : post.sentiment >= 4.0 ? '正面' : '中立';
+      const sentimentLabel = post.sentiment >= 4.5 ? t('sentimentPos') : post.sentiment >= 4.0 ? t('sentimentPos') : t('sentimentNeutral');
       const areaBadge = post.matchType === 'area'
-        ? `<span style="background:#f3e5f5;color:#6a1b9a;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">区域</span>` : '';
+        ? `<span style="background:#f3e5f5;color:#6a1b9a;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">${t('areaBadge')}</span>` : '';
 
       return `
         <div style="background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.06);display:flex;gap:12px;align-items:flex-start;cursor:pointer;"
@@ -1483,9 +1612,9 @@ async function loadInstagramPosts(restaurantName, food, city) {
 
   } catch (err) {
     console.error('Instagram load error:', err);
-    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">Instagram 加载失败</div>`;
+    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('igLoadFail')}</div>`;
     if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ddd'; }
-    if (platCount) platCount.textContent = '加载失败';
+    if (platCount) platCount.textContent = t('loadFailed');
   }
 }
 
@@ -1507,14 +1636,14 @@ async function loadKLFoodie(restaurantName, food) {
     const posts = data.posts || [];
 
     if (posts.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">KLFoodie 暂无相关页面</div>`;
-      if (platCount) platCount.textContent = '暂无';
+      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('klfNone')}</div>`;
+      if (platCount) platCount.textContent = t('none');
       if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ccc'; }
       return;
     }
 
     // Update platform score row
-    if (platCount) platCount.textContent = posts.length + ' 条';
+    if (platCount) platCount.textContent = `${t('posts')(posts.length)}`;
     if (data.avgRating && platBar) platBar.style.width = (data.avgRating / 5 * 100) + '%';
     if (platScore) {
       platScore.textContent = data.avgRating ? data.avgRating.toFixed(1) : posts.length + '';
@@ -1525,18 +1654,18 @@ async function loadKLFoodie(restaurantName, food) {
 
   } catch (err) {
     console.error('KLFoodie load error:', err);
-    if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">KLFoodie 加载失败</div>`;
+    if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('klfLoadFail')}</div>`;
     if (platCount) platCount.textContent = '–';
   }
 }
 
 function renderKLFoodieCard(p) {
   const ratingHtml = p.rating
-    ? `<span style="background:#fff8e1;color:#f57c00;font-weight:800;border-radius:8px;padding:2px 8px;font-size:13px;">⭐ ${p.rating.toFixed(1)}</span>${p.reviewCount ? `<span style="color:#aaa;font-size:11px;"> · ${p.reviewCount} 条评价</span>` : ''}`
+    ? `<span style="background:#fff8e1;color:#f57c00;font-weight:800;border-radius:8px;padding:2px 8px;font-size:13px;">⭐ ${p.rating.toFixed(1)}</span>${p.reviewCount ? `<span style="color:#aaa;font-size:11px;"> · ${p.reviewCount} ${t('klfRatings')}</span>` : ''}`
     : '';
 
   const matchBadge = p.matchType === 'food'
-    ? `<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;">食物类</span>` : '';
+    ? `<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;">Food</span>` : '';
 
   return `
     <div onclick="window.open('${escHtml(p.link)}','_blank')"
@@ -1547,7 +1676,7 @@ function renderKLFoodieCard(p) {
       </div>
       ${ratingHtml ? `<div style="display:flex;align-items:center;gap:6px;">${ratingHtml} ${matchBadge}</div>` : ''}
       ${p.snippet ? `<div style="font-size:12px;color:#666;line-height:1.5;">${escHtml(p.snippet)}</div>` : ''}
-      <div style="font-size:11px;color:#f57c00;font-weight:600;margin-top:2px;">🔗 在 KLFoodie 查看 →</div>
+      <div style="font-size:11px;color:#f57c00;font-weight:600;margin-top:2px;">${t('klfViewOn')}</div>
     </div>`;
 }
 
@@ -1569,13 +1698,13 @@ async function loadTikTokVideos(restaurantName, food, city) {
     const videos = data.videos || [];
 
     if (videos.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">暂无 TikTok 视频</div>`;
-      if (platCount) platCount.textContent = '暂无';
+      container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('ttNone')}</div>`;
+      if (platCount) platCount.textContent = t('none');
       if (platScore) platScore.textContent = '–';
       return;
     }
 
-    if (platCount) platCount.textContent = videos.length + ' 个';
+    if (platCount) platCount.textContent = `${t('videos')(videos.length)}`;
     if (platBar)   platBar.style.width = Math.min(videos.length * 12, 100) + '%';
     if (platScore) { platScore.textContent = videos.length + ''; platScore.style.color = '#69C9D0'; }
 
@@ -1584,19 +1713,19 @@ async function loadTikTokVideos(restaurantName, food, city) {
         ${videos.map(v => renderTikTokCard(v)).join('')}
       </div>
       <div style="font-size:11px;color:#bbb;text-align:center;margin-top:8px;">
-        点击卡片前往 TikTok 观看
+        ${t('ttWatchHint')}
       </div>`;
 
   } catch (err) {
     console.error('TikTok load error:', err);
-    if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">TikTok 加载失败</div>`;
+    if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#bbb; font-size:13px;">${t('ttLoadFail')}</div>`;
     if (platCount) platCount.textContent = '–';
   }
 }
 
 function renderTikTokCard(v) {
   const areaBadge = v.matchType === 'area'
-    ? `<span style="background:#e8f8f9;color:#00796b;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">区域</span>` : '';
+    ? `<span style="background:#e8f8f9;color:#00796b;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">${t('areaBadge')}</span>` : '';
   const views = v.views ? formatViewCount(v.views) : '';
 
   // TikTok brand gradient: black → teal
@@ -1653,7 +1782,7 @@ async function loadYouTubeVideos(restaurantName, food, city) {
 
     // ---- Platform row ----
     if (videos.length > 0) {
-      platCount.textContent = `${videos.length} 个视频`;
+      platCount.textContent = `${t('videos')(videos.length)}`;
       platCount.style.color = '#aaa';
       // YouTube doesn't give a numeric score — show video count as indicator
       const barW = Math.min(100, videos.length * 10);
@@ -1664,12 +1793,12 @@ async function loadYouTubeVideos(restaurantName, food, city) {
     } else {
       platScore.textContent = '–';
       platScore.style.color = '#ddd';
-      platCount.textContent = '无结果';
+      platCount.textContent = t('none');
     }
 
     // ---- Video cards ----
     if (videos.length === 0) {
-      container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">暂时没有相关 YouTube 视频</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('ytNone')}</div>`;
       return;
     }
 
@@ -1679,8 +1808,8 @@ async function loadYouTubeVideos(restaurantName, food, city) {
         ${videos.map(v => renderYTCard(v)).join('')}
       </div>
       <div style="font-size:11px;color:#bbb;text-align:center;margin-top:8px;">
-        ${data.matchType === 'area' ? '⚠️ 显示为区域相关视频，非该档口专属' :
-          data.matchType === 'name' ? '📍 按档口名称搜索结果' : '✅ 直接相关视频'}
+        ${data.matchType === 'area' ? t('ytAreaMatch') :
+          data.matchType === 'name' ? t('ytNameMatch') : t('ytDirectMatch')}
       </div>`;
 
     // Hide scrollbar style
@@ -1689,16 +1818,16 @@ async function loadYouTubeVideos(restaurantName, food, city) {
 
   } catch (err) {
     console.error('YouTube load error:', err);
-    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">YouTube 加载失败</div>`;
+    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('ytLoadFail')}</div>`;
     if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ddd'; }
-    if (platCount) platCount.textContent = '加载失败';
+    if (platCount) platCount.textContent = t('loadFailed');
   }
 }
 
 function renderYTCard(v) {
   const views    = formatViewCount(v.viewCount);
   const areaBadge = v.matchType === 'area'
-    ? `<span style="background:#fff3e0;color:#e65100;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">区域</span>` : '';
+    ? `<span style="background:#fff3e0;color:#e65100;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;">${t('areaBadge')}</span>` : '';
 
   return `
     <div onclick="window.open('${escHtml(v.youtubeUrl)}','_blank')"
@@ -1759,9 +1888,9 @@ async function loadXhsLinks(placeId, restaurantName, address) {
     renderXhsLinks(links, placeId, platScore, platBar, platCount, container);
   } catch (err) {
     console.error('XHS load error:', err);
-    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">小红书加载失败</div>`;
+    if (container) container.innerHTML = `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('xhsLoadFail')}</div>`;
     if (platScore) { platScore.textContent = '–'; platScore.style.color = '#ddd'; }
-    if (platCount) platCount.textContent = '加载失败';
+    if (platCount) platCount.textContent = t('loadFailed');
   }
 }
 
@@ -1773,7 +1902,7 @@ function renderXhsLinks(links, placeId, platScore, platBar, platCount, container
   container = container || document.getElementById('xhs-posts-container');
 
   if (links.length > 0) {
-    platCount.textContent    = `${links.length} 篇笔记`;
+    platCount.textContent    = `${t('notes')(links.length)}`;
     platCount.style.color    = '#aaa';
     platBar.style.width      = Math.min(100, links.length * 25) + '%';
     platScore.textContent    = links.length;
@@ -1782,18 +1911,18 @@ function renderXhsLinks(links, placeId, platScore, platBar, platCount, container
   } else {
     platScore.textContent = '–';
     platScore.style.color = '#ddd';
-    platCount.textContent = '暂无';
+    platCount.textContent = t('none');
   }
 
   // ---- Link cards ----
   const cardsHtml = links.length === 0
-    ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">暂无小红书笔记</div>`
+    ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px;">${t('xhsNone')}</div>`
     : links.map((link, idx) => {
         const isFR = link.isFoodRank;
         const deleteBtn = isAdminMode
           ? `<button onclick="xhsDeleteLink('${escHtml(placeId)}',${idx})"
                     style="flex-shrink:0;padding:4px 10px;background:#ff2442;color:#fff;border:none;
-                           border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">删除</button>`
+                           border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">${t('xhsDeleteBtn')}</button>`
           : `<div style="font-size:18px;color:#ff2442;flex-shrink:0;">›</div>`;
 
         return `
@@ -1807,11 +1936,11 @@ function renderXhsLinks(links, placeId, platScore, platBar, platCount, container
               <div style="flex:1;min-width:0;">
                 <div style="font-size:13px;font-weight:700;color:#111;line-height:1.4;
                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${escHtml(link.title || '小红书笔记')}
+                  ${escHtml(link.title || t('xhsDefaultTitle'))}
                 </div>
                 <div style="font-size:11px;color:#aaa;margin-top:3px;display:flex;align-items:center;gap:6px;">
                   ${isFR ? `<span style="background:#ff2442;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;">FoodRank</span>` : ''}
-                  <span>${escHtml(link.author || '小红书')}</span>
+                  <span>${escHtml(link.author || t('xhsDefaultAuthor'))}</span>
                 </div>
               </div>
             </a>
@@ -1822,25 +1951,25 @@ function renderXhsLinks(links, placeId, platScore, platBar, platCount, container
   // ---- Admin add-link form ----
   const adminForm = isAdminMode ? `
     <div style="margin-top:12px;padding:14px;background:#fff8e1;border:1px dashed #ffc107;border-radius:14px;">
-      <div style="font-size:12px;font-weight:800;color:#f57c00;margin-bottom:10px;">➕ 添加小红书链接</div>
+      <div style="font-size:12px;font-weight:800;color:#f57c00;margin-bottom:10px;">${t('xhsAddForm')}</div>
       <div style="padding:8px 12px;background:#fff3cd;border-radius:8px;margin-bottom:10px;">
         <div style="font-size:12px;font-weight:700;color:#333;">${escHtml(_xhsCurrentName)}</div>
         <div style="font-size:11px;color:#888;margin-top:2px;">${escHtml(_xhsCurrentAddress)}</div>
       </div>
-      <input id="xhs-form-url"    type="url"  placeholder="小红书链接 URL *"
+      <input id="xhs-form-url"    type="url"  placeholder="${t('xhsUrlPlaceholder')}"
              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:8px;box-sizing:border-box;" />
-      <input id="xhs-form-title"  type="text" placeholder="标题（可选）"
+      <input id="xhs-form-title"  type="text" placeholder="${t('xhsTitlePlaceholder')}"
              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:8px;box-sizing:border-box;" />
-      <input id="xhs-form-author" type="text" placeholder="作者名（可选）"
+      <input id="xhs-form-author" type="text" placeholder="${t('xhsAuthorPlaceholder')}"
              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;margin-bottom:10px;box-sizing:border-box;" />
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#555;margin-bottom:12px;cursor:pointer;">
         <input id="xhs-form-foodrank" type="checkbox" style="width:18px;height:18px;accent-color:#ff2442;" />
-        这是 FoodRank 官方帖子
+        ${t('xhsFoodRankLabel')}
       </label>
       <button onclick="xhsAddLink('${escHtml(placeId)}')"
               style="width:100%;padding:11px;background:#ff2442;color:#fff;border:none;border-radius:10px;
                      font-size:14px;font-weight:700;cursor:pointer;">
-        保存链接
+        ${t('xhsSaveBtn')}
       </button>
     </div>` : '';
 
@@ -1853,8 +1982,8 @@ async function xhsAddLink(placeId) {
   const author    = document.getElementById('xhs-form-author')?.value?.trim();
   const isFoodRank = document.getElementById('xhs-form-foodrank')?.checked || false;
 
-  if (!url) { showToast('⚠️ 请填写链接 URL'); return; }
-  if (!url.startsWith('http')) { showToast('⚠️ 请输入有效的 URL'); return; }
+  if (!url) { showToast(t('toastUrlRequired')); return; }
+  if (!url.startsWith('http')) { showToast(t('toastUrlInvalid')); return; }
 
   try {
     const res = await fetch(`${API_BASE}/admin/xhs-links`, {
@@ -1868,27 +1997,27 @@ async function xhsAddLink(placeId) {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showToast('❌ ' + (data.error || '保存失败')); return; }
-    showToast('✅ 链接已保存！');
+    if (!res.ok) { showToast('❌ ' + (data.error || t('toastSaveFail').replace('❌ ',''))); return; }
+    showToast(t('xhsSaved'));
     renderXhsLinks(data.links, placeId);
   } catch (err) {
-    showToast('❌ 网络错误，请重试');
+    showToast(t('toastNetworkError'));
   }
 }
 
 async function xhsDeleteLink(placeId, index) {
-  if (!confirm('确定删除这条链接？')) return;
+  if (!confirm(t('xhsDeleteConfirm'))) return;
   try {
     const res = await fetch(`${API_BASE}/admin/xhs-links/${encodeURIComponent(placeId)}/${index}`, {
       method: 'DELETE',
       headers: { 'x-admin-key': '6' }
     });
     const data = await res.json();
-    if (!res.ok) { showToast('❌ ' + (data.error || '删除失败')); return; }
-    showToast('🗑️ 已删除');
+    if (!res.ok) { showToast('❌ ' + (data.error || t('toastDeleteFail').replace('❌ ',''))); return; }
+    showToast(t('xhsDeleted'));
     renderXhsLinks(data.links, placeId);
   } catch (err) {
-    showToast('❌ 网络错误，请重试');
+    showToast(t('toastNetworkError'));
   }
 }
 
@@ -1907,9 +2036,40 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ============================================================
+// SHARE RESTAURANT
+// ============================================================
+async function shareRestaurant() {
+  const r = window._currentRestaurant;
+  if (!r) return;
+
+  const baseUrl = window.location.origin + window.location.pathname;
+  const shareUrl = `${baseUrl}?placeId=${encodeURIComponent(r.id)}&name=${encodeURIComponent(r.name)}`;
+  const rating   = r.googleRating ? `⭐ ${r.googleRating.toFixed(1)}  ·  ` : '';
+  const text     = `${rating}${r.vicinity || r.address || ''}`;
+
+  if (navigator.share) {
+    // Native share sheet on mobile (iOS/Android)
+    try {
+      await navigator.share({
+        title: r.name,
+        text:  `🍽️ ${r.name}\n${text}\n\n${t('shareText')(r.name, text)}`,
+        url:   shareUrl,
+      });
+    } catch (e) {
+      // User cancelled — do nothing
+    }
+  } else {
+    // Desktop fallback — copy link
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => showToast(t('toastLinkCopied')))
+      .catch(() => showToast(t('toastCopyFail')));
+  }
+}
+
 function copyPlaceId(id) {
   navigator.clipboard.writeText(id)
-    .then(() => showToast('✅ Place ID 已复制！'))
+    .then(() => showToast(t('toastPlaceIdCopied')))
     .catch(() => {
       // Fallback for browsers that don't support clipboard API
       const el = document.createElement('textarea');
@@ -1918,9 +2078,44 @@ function copyPlaceId(id) {
       el.select();
       document.execCommand('copy');
       document.body.removeChild(el);
-      showToast('✅ Place ID 已复制！');
+      showToast(t('toastPlaceIdCopied'));
     });
 }
+
+// ============================================================
+// DEEP LINK — auto-open restaurant if ?placeId= is in URL
+// ============================================================
+(async function handleDeepLink() {
+  const params  = new URLSearchParams(window.location.search);
+  const placeId = params.get('placeId');
+  const name    = params.get('name');
+  if (!placeId) return;
+
+  // Wait briefly for app to render
+  await new Promise(r => setTimeout(r, 400));
+
+  showToast(t('toastOpening')(name));
+
+  try {
+    const res  = await fetch(`${API_BASE}/place/${encodeURIComponent(placeId)}`);
+    const data = await res.json();
+
+    // Build a minimal restaurant object from the place detail response
+    const r = {
+      id:               placeId,
+      name:             data.displayName?.text || name || '餐厅',
+      googleRating:     data.rating,
+      googleReviewCount:data.userRatingCount,
+      vicinity:         data.shortFormattedAddress || data.formattedAddress || '',
+      isOpen:           data.currentOpeningHours?.openNow,
+      emoji:            '🍽️',
+      photos:           data.photos,
+    };
+    openRestaurantDetail(r);
+  } catch (e) {
+    showToast(t('toastLoadFail'));
+  }
+})();
 
 function escHtml(str) {
   if (!str) return '';

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="800" viewBox="0 0 2400 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35"/>
+      <stop offset="100%" style="stop-color:#FF9A5C"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.14"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#c8440a" flood-opacity="0.3"/>
+    </filter>
+    <clipPath id="bannerClip">
+      <rect width="2400" height="800" rx="60" ry="60"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2400" height="800" rx="60" ry="60" fill="url(#bg)"/>
+  <rect width="2400" height="400" fill="url(#shine)" clip-path="url(#bannerClip)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="2200" cy="160" r="280" fill="#ffffff" opacity="0.04"/>
+  <circle cx="2300" cy="700" r="200" fill="#ffffff" opacity="0.04"/>
+  <circle cx="180"  cy="680" r="240" fill="#ffffff" opacity="0.04"/>
+
+  <!-- Fork & knife icon -->
+  <g transform="translate(280, 400)" filter="url(#shadow)">
+    <g transform="translate(-52, 0)" fill="#ffffff" opacity="0.92">
+      <rect x="-14" y="-130" width="6" height="75" rx="3"/>
+      <rect x="-5"  y="-130" width="6" height="75" rx="3"/>
+      <rect x="4"   y="-130" width="6" height="75" rx="3"/>
+      <rect x="-14" y="-62"  width="24" height="9" rx="4"/>
+      <rect x="-4"  y="-55"  width="8"  height="155" rx="4"/>
+    </g>
+    <g transform="translate(52, 0)" fill="#ffffff" opacity="0.92">
+      <path d="M-3.5,-130 Q12,-115 12,-45 L-3.5,-45 Z"/>
+      <rect x="-3.5" y="-45" width="8" height="155" rx="4"/>
+    </g>
+    <circle cx="0" cy="40" r="72" fill="none" stroke="#ffffff" stroke-width="7" opacity="0.7"/>
+    <circle cx="0" cy="40" r="48" fill="#ffffff" opacity="0.12"/>
+  </g>
+
+  <!-- FoodRank wordmark -->
+  <text
+    x="430" y="455"
+    font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="320"
+    font-weight="800"
+    letter-spacing="-4"
+    dominant-baseline="middle"
+    fill="#ffffff"
+    filter="url(#shadow)"
+  >FoodRank</text>
+
+  <!-- Tagline -->
+  <text
+    x="438" y="592"
+    font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="52"
+    font-weight="500"
+    letter-spacing="8"
+    fill="#ffffff"
+    opacity="0.72"
+  >美食排行榜  ·  Find Your Next Meal</text>
+</svg>
