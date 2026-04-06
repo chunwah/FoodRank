@@ -1576,7 +1576,7 @@ function goToDetail(index) {
       </div>
     </div>
 
-    <button class="open-app-btn" onclick="openMaps('${escHtml(r.name)}', ${r.id ? '"' + r.id + '"' : 'null'}, ${r.lat || 'null'}, ${r.lng || 'null'})">
+    <button class="open-app-btn" onclick="openMaps()">
       ${t('navigate')}
     </button>
     ${isAdminMode && r.id ? `
@@ -2154,7 +2154,12 @@ async function xhsDeleteLink(placeId, index) {
 // (& in URLs breaks HTML attribute parsing)
 let _navOptions = [];
 
-function openMaps(name, placeId, lat, lng) {
+function openMaps() {
+  const r = window._currentRestaurant || {};
+  const name    = r.name    || '';
+  const placeId = r.id      || null;
+  const lat     = r.lat     || null;
+  const lng     = r.lng     || null;
   const L = currentLang;
   const q = encodeURIComponent(name);
 
