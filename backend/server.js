@@ -235,6 +235,10 @@ app.post('/api/search', async (req, res) => {
         // to keep search fast (avoids 10x extra API calls per search)
         reviews: null,
 
+        // Coordinates (for navigation)
+        lat: place.location?.latitude || null,
+        lng: place.location?.longitude || null,
+
         // Photo reference (first photo)
         photoRef: place.photos?.[0]?.name || null,
 

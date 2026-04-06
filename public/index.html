@@ -135,6 +135,21 @@
   .nav-abs { position: absolute; top: 44px; z-index: 10; width: 100%; display: flex; padding: 8px 16px; gap: 8px; justify-content: space-between; }
   .open-app-btn { margin: 0 16px 20px; background: linear-gradient(135deg, #FF6B35, #FF8C42); color: #fff; border: none; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 800; width: calc(100% - 32px); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
+  /* Nav picker bottom sheet */
+  .nav-sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; align-items: flex-end; }
+  .nav-sheet-overlay.open { display: flex; }
+  .nav-sheet { background: #fff; border-radius: 24px 24px 0 0; padding: 16px 16px 32px; width: 100%; }
+  .nav-sheet-title { font-size: 13px; color: #aaa; font-weight: 600; text-align: center; margin-bottom: 16px; }
+  .nav-sheet-options { display: flex; flex-direction: column; gap: 10px; }
+  .nav-option { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: #f7f7f9; cursor: pointer; border: none; width: 100%; text-align: left; }
+  .nav-option:active { background: #efefef; }
+  .nav-option-icon { font-size: 28px; width: 36px; text-align: center; flex-shrink: 0; }
+  .nav-option-info { flex: 1; }
+  .nav-option-name { font-size: 15px; font-weight: 800; color: #111; }
+  .nav-option-sub  { font-size: 12px; color: #888; margin-top: 2px; }
+  .nav-option-arrow { font-size: 16px; color: #ccc; }
+  .nav-sheet-cancel { margin-top: 10px; padding: 14px; border-radius: 16px; background: #f0f0f5; border: none; width: 100%; font-size: 15px; font-weight: 700; color: #555; cursor: pointer; }
+
   /* Stars helper */
   .stars-row { display: flex; gap: 1px; }
 
@@ -324,6 +339,17 @@
 
     <div class="detail-body" id="detail-body">
       <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <!-- ==================== NAV APP PICKER ==================== -->
+  <div class="nav-sheet-overlay" id="nav-sheet-overlay" onclick="closeNavSheet(event)">
+    <div class="nav-sheet">
+      <div class="nav-sheet-title" id="nav-sheet-title">导航到这里</div>
+      <div class="nav-sheet-options" id="nav-sheet-options">
+        <!-- populated by openMaps() -->
+      </div>
+      <button class="nav-sheet-cancel" onclick="document.getElementById('nav-sheet-overlay').classList.remove('open')" id="nav-sheet-cancel">取消</button>
     </div>
   </div>
 
@@ -1550,7 +1576,7 @@ function goToDetail(index) {
       </div>
     </div>
 
-    <button class="open-app-btn" onclick="openMaps('${escHtml(r.name)}', ${r.id ? '"' + r.id + '"' : 'null'})">
+    <button class="open-app-btn" onclick="openMaps('${escHtml(r.name)}', ${r.id ? '"' + r.id + '"' : 'null'}, ${r.lat || 'null'}, ${r.lng || 'null'})">
       ${t('navigate')}
     </button>
     ${isAdminMode && r.id ? `
@@ -2124,9 +2150,84 @@ async function xhsDeleteLink(placeId, index) {
   }
 }
 
-function openMaps(name, placeId) {
-  const query = encodeURIComponent(name);
-  window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+function openMaps(name, placeId, lat, lng) {
+  const L = currentLang;
+  const isSG = userCountryCode === 'SG';
+
+  // Build each app's URL
+  // Google Maps — use Place ID for exact pin, fallback to name
+  const gmQuery = encodeURIComponent(name);
+  const gmUrl = placeId
+    ? `https://www.google.com/maps/search/?api=1&query=${gmQuery}&query_place_id=${placeId}`
+    : `https://www.google.com/maps/search/?api=1&query=${gmQuery}`;
+
+  // Waze — lat/lng is most accurate, fallback to name search
+  const wazeUrl = (lat && lng)
+    ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
+    : `https://waze.com/ul?q=${encodeURIComponent(name)}`;
+
+  // Apple Maps — lat/lng or name
+  const appleUrl = (lat && lng)
+    ? `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(name)}`
+    : `https://maps.apple.com/?q=${encodeURIComponent(name)}`;
+
+  // Grab Maps — popular in SEA (Grab's navigation)
+  const grabUrl = (lat && lng)
+    ? `https://www.grab.com/sg/transport/?dropoff=${lat},${lng}`
+    : null;
+
+  const options = [
+    {
+      icon: '🗺️',
+      name: 'Google Maps',
+      sub: L === 'zh' ? '最准确，支持 Street View' : 'Most accurate, supports Street View',
+      url: gmUrl
+    },
+    {
+      icon: '🔵',
+      name: 'Waze',
+      sub: L === 'zh' ? '实时路况，推荐路线' : 'Live traffic, recommended routes',
+      url: wazeUrl
+    },
+    {
+      icon: '🍎',
+      name: 'Apple Maps',
+      sub: L === 'zh' ? 'iPhone 原生导航' : 'Native iPhone navigation',
+      url: appleUrl
+    }
+  ];
+
+  // Update sheet title
+  const title = document.getElementById('nav-sheet-title');
+  if (title) title.textContent = L === 'zh' ? `导航去 ${name}` : `Navigate to ${name}`;
+
+  // Update cancel button
+  const cancelBtn = document.getElementById('nav-sheet-cancel');
+  if (cancelBtn) cancelBtn.textContent = L === 'zh' ? '取消' : 'Cancel';
+
+  // Render options
+  const container = document.getElementById('nav-sheet-options');
+  if (container) {
+    container.innerHTML = options.map(opt => `
+      <button class="nav-option" onclick="window.open('${opt.url}','_blank'); document.getElementById('nav-sheet-overlay').classList.remove('open');">
+        <div class="nav-option-icon">${opt.icon}</div>
+        <div class="nav-option-info">
+          <div class="nav-option-name">${opt.name}</div>
+          <div class="nav-option-sub">${opt.sub}</div>
+        </div>
+        <div class="nav-option-arrow">›</div>
+      </button>
+    `).join('');
+  }
+
+  document.getElementById('nav-sheet-overlay').classList.add('open');
+}
+
+function closeNavSheet(e) {
+  // Close only when clicking the overlay background, not the sheet itself
+  if (e.target === document.getElementById('nav-sheet-overlay')) {
+    document.getElementById('nav-sheet-overlay').classList.remove('open');
+  }
 }
 
 // ============================================================
