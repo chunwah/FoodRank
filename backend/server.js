@@ -210,6 +210,8 @@ app.post('/api/search', async (req, res) => {
         maxResultCount: 20,
         // Use English for MY/SG as place names are often in English/Romanized
         languageCode: ['MY','SG','PH','ID','TH','VN'].includes(countryCode) ? 'en' : 'zh-TW',
+        // Restrict results to detected country — prevents SG searches returning JB results etc.
+        regionCode: countryCode.toLowerCase(),
         // Removed includedType:'restaurant' — too restrictive, misses hawker stalls,
         // kopitiams, food courts. Google Places 'restaurant' type excludes many SEA food places.
       },
