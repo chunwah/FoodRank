@@ -10,6 +10,7 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const { google } = require('googleapis');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,32 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google Gemini AI
 
 app.use(cors());
 app.use(express.json());
+
+// ============================================================
+// RATE LIMITING — protect Google API quota + prevent abuse
+// ============================================================
+
+// General API: 60 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' }
+});
+
+// Search endpoint: stricter — 10 searches per minute per IP
+// (each search costs Google Places API quota)
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Search limit reached. Please wait a moment before searching again.' }
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/search', searchLimiter);
 
 // Serve the frontend (public folder)
 app.use(express.static(path.join(__dirname, '../public')));
@@ -1024,6 +1051,10 @@ const callGemini = async (prompt, lang = 'zh') => {
 const XHS_DB_PATH = path.join(__dirname, 'xhs_links.json');
 
 const ADMIN_KEY = process.env.ADMIN_KEY || '6';
+if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY === '6') {
+  console.warn('⚠️  WARNING: ADMIN_KEY is not set or is using the default value "6".');
+  console.warn('   Set a strong ADMIN_KEY in Railway environment variables!');
+}
 const SHEET_ID  = process.env.GOOGLE_SHEET_ID; // The spreadsheet ID from the URL
 
 // ---- Google Sheets auth ----

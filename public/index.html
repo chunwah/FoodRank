@@ -380,7 +380,9 @@ let searchResults = [];
 let currentEmoji = '🍜';
 let currentSort = 'score'; // 'score' | 'distance' | 'rating' | 'reviews'
 let currentLang = 'zh';   // 'zh' | 'en'
-const isAdminMode = new URLSearchParams(window.location.search).get('admin') === '6';
+const _adminParam = new URLSearchParams(window.location.search).get('admin');
+const isAdminMode = !!_adminParam;  // any non-empty ?admin= value enables UI
+const _adminKey   = _adminParam || '';  // passed to API headers
 let _shuffledIndices = [];  // indices into foodItems for chips (0-6) + feat cards (7-10)
 
 // ============================================================
@@ -2125,7 +2127,7 @@ async function xhsAddLink(placeId) {
   try {
     const res = await fetch(`${API_BASE}/admin/xhs-links`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': '6' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _adminKey },
       body: JSON.stringify({
         placeId,
         restaurantName: _xhsCurrentName,
@@ -2147,7 +2149,7 @@ async function xhsDeleteLink(placeId, index) {
   try {
     const res = await fetch(`${API_BASE}/admin/xhs-links/${encodeURIComponent(placeId)}/${index}`, {
       method: 'DELETE',
-      headers: { 'x-admin-key': '6' }
+      headers: { 'x-admin-key': _adminKey }
     });
     const data = await res.json();
     if (!res.ok) { showToast('❌ ' + (data.error || t('toastDeleteFail').replace('❌ ',''))); return; }
