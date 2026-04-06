@@ -1254,7 +1254,7 @@ async function readGems() {
   }));
 }
 
-// GET — nearby hidden gems (within ~5km of user)
+// GET — nearby hidden gems (within ~5km of user.)
 app.get('/api/hidden-gems', async (req, res) => {
   const { lat, lng, countryCode = 'MY' } = req.query;
   if (!SHEET_ID) return res.json({ gems: [] });
