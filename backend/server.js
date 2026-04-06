@@ -10,7 +10,9 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const { google } = require('googleapis');
-const rateLimit = require('express-rate-limit');
+// express-rate-limit loaded conditionally (installed on Railway after first deploy)
+let rateLimit;
+try { rateLimit = require('express-rate-limit'); } catch(e) { rateLimit = null; }
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,28 +27,43 @@ app.use(express.json());
 // ============================================================
 // RATE LIMITING — protect Google API quota + prevent abuse
 // ============================================================
-
-// General API: 60 requests per minute per IP
-const generalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please slow down.' }
-});
-
-// Search endpoint: stricter — 10 searches per minute per IP
-// (each search costs Google Places API quota)
-const searchLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Search limit reached. Please wait a moment before searching again.' }
-});
-
-app.use('/api/', generalLimiter);
-app.use('/api/search', searchLimiter);
+if (rateLimit) {
+  // General API: 60 requests per minute per IP
+  const generalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please slow down.' }
+  });
+  // Search endpoint: stricter — 10 searches per minute per IP
+  const searchLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Search limit reached. Please wait a moment before searching again.' }
+  });
+  app.use('/api/', generalLimiter);
+  app.use('/api/search', searchLimiter);
+  console.log('✅ Rate limiting enabled');
+} else {
+  // Fallback: simple in-memory rate limiter (no extra package needed)
+  const ipHits = new Map();
+  const WINDOW = 60 * 1000; // 1 minute
+  app.use('/api/search', (req, res, next) => {
+    const ip  = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const hits = (ipHits.get(ip) || []).filter(t => now - t < WINDOW);
+    if (hits.length >= 10) {
+      return res.status(429).json({ error: 'Search limit reached. Please wait a moment.' });
+    }
+    hits.push(now);
+    ipHits.set(ip, hits);
+    next();
+  });
+  console.log('⚠️  express-rate-limit not found — using built-in fallback limiter');
+}
 
 // Serve the frontend (public folder)
 app.use(express.static(path.join(__dirname, '../public')));
