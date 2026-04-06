@@ -219,8 +219,8 @@ app.post('/api/search', async (req, res) => {
         googleRating: place.rating || null,
         googleReviewCount: place.userRatingCount || 0,
 
-        // Aggregate score (only Google for now)
-        aggregateScore: place.rating ? parseFloat(place.rating.toFixed(1)) : null,
+        // Aggregate score — computed after distance is known (see below)
+        aggregateScore: null,
         aggregateSources: 1,
 
         // Opening hours — already included in search FieldMask
@@ -253,8 +253,46 @@ app.post('/api/search', async (req, res) => {
       };
     });
 
-    // Sort by rating (highest first)
-    results.sort((a, b) => (b.googleRating || 0) - (a.googleRating || 0));
+    // ── Compute aggregate score for each result ──────────────────────────────
+    // Formula: 65% Bayesian rating + 30% proximity + 5% open status
+    //
+    // Bayesian rating: smooths out unreliable low-review places.
+    //   score = (C×M + rating×reviews) / (C + reviews)
+    //   C=100 virtual votes at mean M=4.0 — a place with 2 reviews at 5★
+    //   scores ~4.02, not 5.0. A place with 500 reviews at 4.5★ scores ~4.49.
+    //
+    // Proximity score: linear decay 0–5, full score ≤500m, zero at ≥3km.
+    //   Ensures the app recommends nearby places first (not somewhere 10km away).
+    //
+    // Open bonus: small boost for currently-open restaurants.
+    const C = 100;   // Bayesian smoothing constant
+    const M = 4.0;   // assumed global mean rating
+    const MAX_DIST = 3000; // 3km = full proximity penalty
+
+    results.forEach(r => {
+      const rating  = r.googleRating || 0;
+      const reviews = r.googleReviewCount || 0;
+
+      // 1. Bayesian rating (1–5 scale)
+      const bayesRating = reviews > 0
+        ? (C * M + rating * reviews) / (C + reviews)
+        : (rating > 0 ? M * 0.8 : 0); // no reviews → penalise
+
+      // 2. Proximity score (0–5 scale); null distance = neutral 2.5
+      const proxScore = r.distance !== null
+        ? Math.max(0, 1 - r.distance / MAX_DIST) * 5
+        : 2.5;
+
+      // 3. Open status bonus/penalty
+      const openAdj = r.isOpen === true ? 0.15 : (r.isOpen === false ? -0.1 : 0);
+
+      // 4. Weighted final score, clamped to 1.0–5.0
+      const raw = (bayesRating * 0.65) + (proxScore * 0.30) + openAdj;
+      r.aggregateScore = parseFloat(Math.max(1.0, Math.min(5.0, raw)).toFixed(1));
+    });
+
+    // Sort by aggregate score (highest first)
+    results.sort((a, b) => (b.aggregateScore || 0) - (a.aggregateScore || 0));
 
     // Re-assign ranks after sorting
     results.forEach((r, i) => r.rank = i + 1);

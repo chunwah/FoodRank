@@ -2150,66 +2150,46 @@ async function xhsDeleteLink(placeId, index) {
   }
 }
 
+// Store nav options globally to avoid putting URLs inside HTML onclick attributes
+// (& in URLs breaks HTML attribute parsing)
+let _navOptions = [];
+
 function openMaps(name, placeId, lat, lng) {
   const L = currentLang;
-  const isSG = userCountryCode === 'SG';
+  const q = encodeURIComponent(name);
 
-  // Build each app's URL
-  // Google Maps — use Place ID for exact pin, fallback to name
-  const gmQuery = encodeURIComponent(name);
+  // Google Maps — Place ID gives exact pin, no wrong-location issues
   const gmUrl = placeId
-    ? `https://www.google.com/maps/search/?api=1&query=${gmQuery}&query_place_id=${placeId}`
-    : `https://www.google.com/maps/search/?api=1&query=${gmQuery}`;
+    ? `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${placeId}`
+    : `https://www.google.com/maps/search/?api=1&query=${q}`;
 
-  // Waze — lat/lng is most accurate, fallback to name search
+  // Waze — coordinates are most accurate
   const wazeUrl = (lat && lng)
     ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
-    : `https://waze.com/ul?q=${encodeURIComponent(name)}`;
+    : `https://waze.com/ul?q=${q}`;
 
-  // Apple Maps — lat/lng or name
+  // Apple Maps
   const appleUrl = (lat && lng)
-    ? `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(name)}`
-    : `https://maps.apple.com/?q=${encodeURIComponent(name)}`;
+    ? `https://maps.apple.com/?ll=${lat},${lng}&q=${q}`
+    : `https://maps.apple.com/?q=${q}`;
 
-  // Grab Maps — popular in SEA (Grab's navigation)
-  const grabUrl = (lat && lng)
-    ? `https://www.grab.com/sg/transport/?dropoff=${lat},${lng}`
-    : null;
-
-  const options = [
-    {
-      icon: '🗺️',
-      name: 'Google Maps',
-      sub: L === 'zh' ? '最准确，支持 Street View' : 'Most accurate, supports Street View',
-      url: gmUrl
-    },
-    {
-      icon: '🔵',
-      name: 'Waze',
-      sub: L === 'zh' ? '实时路况，推荐路线' : 'Live traffic, recommended routes',
-      url: wazeUrl
-    },
-    {
-      icon: '🍎',
-      name: 'Apple Maps',
-      sub: L === 'zh' ? 'iPhone 原生导航' : 'Native iPhone navigation',
-      url: appleUrl
-    }
+  _navOptions = [
+    { icon: '🗺️', name: 'Google Maps', sub: L === 'zh' ? '最准确，支持 Street View' : 'Most accurate, supports Street View', url: gmUrl },
+    { icon: '🔵', name: 'Waze',        sub: L === 'zh' ? '实时路况，推荐路线'       : 'Live traffic, recommended routes',    url: wazeUrl },
+    { icon: '🍎', name: 'Apple Maps',  sub: L === 'zh' ? 'iPhone 原生导航'          : 'Native iPhone navigation',            url: appleUrl }
   ];
 
-  // Update sheet title
-  const title = document.getElementById('nav-sheet-title');
-  if (title) title.textContent = L === 'zh' ? `导航去 ${name}` : `Navigate to ${name}`;
+  // Title + cancel label
+  const titleEl = document.getElementById('nav-sheet-title');
+  if (titleEl) titleEl.textContent = L === 'zh' ? `导航去 ${name}` : `Navigate to ${name}`;
+  const cancelEl = document.getElementById('nav-sheet-cancel');
+  if (cancelEl) cancelEl.textContent = L === 'zh' ? '取消' : 'Cancel';
 
-  // Update cancel button
-  const cancelBtn = document.getElementById('nav-sheet-cancel');
-  if (cancelBtn) cancelBtn.textContent = L === 'zh' ? '取消' : 'Cancel';
-
-  // Render options
+  // Render options — use index-based onclick to keep URLs out of HTML attributes
   const container = document.getElementById('nav-sheet-options');
   if (container) {
-    container.innerHTML = options.map(opt => `
-      <button class="nav-option" onclick="window.open('${opt.url}','_blank'); document.getElementById('nav-sheet-overlay').classList.remove('open');">
+    container.innerHTML = _navOptions.map((opt, i) => `
+      <button class="nav-option" onclick="openNavOption(${i})">
         <div class="nav-option-icon">${opt.icon}</div>
         <div class="nav-option-info">
           <div class="nav-option-name">${opt.name}</div>
@@ -2223,8 +2203,13 @@ function openMaps(name, placeId, lat, lng) {
   document.getElementById('nav-sheet-overlay').classList.add('open');
 }
 
+function openNavOption(i) {
+  const opt = _navOptions[i];
+  if (opt) window.open(opt.url, '_blank');
+  document.getElementById('nav-sheet-overlay').classList.remove('open');
+}
+
 function closeNavSheet(e) {
-  // Close only when clicking the overlay background, not the sheet itself
   if (e.target === document.getElementById('nav-sheet-overlay')) {
     document.getElementById('nav-sheet-overlay').classList.remove('open');
   }
