@@ -1228,6 +1228,132 @@ app.delete('/api/admin/xhs-links/:placeId/:index', async (req, res) => {
   }
 });
 
+// ============================================================
+// HIDDEN GEMS — FoodRank curated restaurants (Sheet2)
+// Columns: placeId | name | address | lat | lng | countryCode |
+//          note | testedBy | testedDate | photoUrl
+// ============================================================
+
+async function readGems() {
+  const sheets = getSheetsClient();
+  const resp = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: 'Gems!A2:J',
+  });
+  return (resp.data.values || []).map(r => ({
+    placeId:     r[0] || '',
+    name:        r[1] || '',
+    address:     r[2] || '',
+    lat:         r[3] ? parseFloat(r[3]) : null,
+    lng:         r[4] ? parseFloat(r[4]) : null,
+    countryCode: r[5] || 'MY',
+    note:        r[6] || '',
+    testedBy:    r[7] || 'FoodRank',
+    testedDate:  r[8] || '',
+    photoUrl:    r[9] || '',
+  }));
+}
+
+// GET — nearby hidden gems (within ~5km of user)
+app.get('/api/hidden-gems', async (req, res) => {
+  const { lat, lng, countryCode = 'MY' } = req.query;
+  if (!SHEET_ID) return res.json({ gems: [] });
+
+  try {
+    const all = await readGems();
+
+    // Filter by country first
+    let gems = all.filter(g => g.countryCode === countryCode);
+
+    // If lat/lng provided, sort by distance and keep nearby ones
+    if (lat && lng) {
+      const uLat = parseFloat(lat);
+      const uLng = parseFloat(lng);
+      gems = gems
+        .map(g => ({
+          ...g,
+          distance: g.lat && g.lng ? calculateDistance(uLat, uLng, g.lat, g.lng) : null
+        }))
+        .filter(g => g.distance === null || g.distance <= 10000) // within 10km
+        .sort((a, b) => (a.distance || 9999) - (b.distance || 9999));
+    }
+
+    res.json({ gems: gems.slice(0, 6) });
+  } catch (err) {
+    console.error('Hidden gems read error:', err.message);
+    res.json({ gems: [] });
+  }
+});
+
+// POST — admin adds a curated gem
+app.post('/api/admin/hidden-gems', async (req, res) => {
+  if (!checkAdmin(req, res)) return;
+  const { placeId, name, address, lat, lng, countryCode, note, testedBy, photoUrl } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+
+  try {
+    const sheets = getSheetsClient();
+    const testedDate = new Date().toISOString().split('T')[0];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: 'Gems!A:J',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          placeId || '',
+          name,
+          address || '',
+          lat || '',
+          lng || '',
+          countryCode || 'MY',
+          note || '',
+          testedBy || 'FoodRank',
+          testedDate,
+          photoUrl || '',
+        ]]
+      }
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Hidden gems write error:', err.message);
+    res.status(500).json({ error: '保存失败: ' + err.message });
+  }
+});
+
+// DELETE — admin removes a gem by index
+app.delete('/api/admin/hidden-gems/:index', async (req, res) => {
+  if (!checkAdmin(req, res)) return;
+  const targetIdx = parseInt(req.params.index, 10);
+
+  try {
+    const sheets = getSheetsClient();
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const gemsSheet = meta.data.sheets.find(s => s.properties.title === 'Gems');
+    if (!gemsSheet) return res.status(404).json({ error: 'Gems sheet not found' });
+    const sheetGid = gemsSheet.properties.sheetId;
+
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: {
+              sheetId: sheetGid,
+              dimension: 'ROWS',
+              startIndex: targetIdx + 1, // +1 for header
+              endIndex:   targetIdx + 2,
+            }
+          }
+        }]
+      }
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Hidden gems delete error:', err.message);
+    res.status(500).json({ error: '删除失败: ' + err.message });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',

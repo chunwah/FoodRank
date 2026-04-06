@@ -173,6 +173,22 @@
   .feat-name { font-size: 13px; font-weight: 700; color: #111; }
   .feat-score { font-size: 12px; color: #FF6B35; font-weight: 700; margin-top: 2px; }
   .feat-dist { font-size: 11px; color: #aaa; }
+
+  /* Hidden Gems */
+  .gem-row { display: flex; gap: 12px; padding: 0 20px 16px; overflow-x: auto; }
+  .gem-row::-webkit-scrollbar { display: none; }
+  .gem-card { flex-shrink: 0; width: 200px; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 14px rgba(0,0,0,0.08); cursor: pointer; border: 1.5px solid #fff0f5; }
+  .gem-card-img { height: 100px; background: linear-gradient(135deg, #fff0f5, #ffe4f0); display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; overflow: hidden; }
+  .gem-card-img img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .gem-badge { position: absolute; top: 8px; left: 8px; background: linear-gradient(135deg, #FF6B35, #ff2d78); color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; z-index: 1; }
+  .gem-card-info { padding: 10px 12px 12px; }
+  .gem-card-name { font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gem-card-note { font-size: 11px; color: #888; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .gem-card-meta { font-size: 11px; color: #FF6B35; font-weight: 700; margin-top: 6px; }
+  .gem-empty { padding: 0 20px 16px; font-size: 13px; color: #bbb; }
+
+  /* Hidden gem badge on rank cards */
+  .gem-rank-badge { background: linear-gradient(135deg, #FF6B35, #ff2d78); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -243,6 +259,12 @@
             <div class="feat-score">📍 附近排行</div>
           </div>
         </div>
+      </div>
+
+      <!-- ── Hidden Gems ── -->
+      <div class="section-title" id="home-gems-title">💎 附近遗珠</div>
+      <div class="gem-row" id="home-gems-row">
+        <div class="gem-empty" id="home-gems-loading">⏳ 正在寻找遗珠...</div>
       </div>
 
       <div style="margin: 20px 16px; background: linear-gradient(135deg, #f0f0ff, #e8e8ff); border-radius: 18px; padding: 16px;">
@@ -414,6 +436,13 @@ const LANG = {
     analyzing: '好的！根据你的选择...\n我帮你分析完毕 🎯',
     rainyHotpot: '下雨天嘛，不如直接吃火锅？还是你有其他想法？',
     favComing: '❤️ 收藏功能开发中', meComing: '👤 个人页面开发中',
+    gemsTitle: '💎 附近遗珠', gemsLoading: '⏳ 正在寻找遗珠...', gemsEmpty: '附近暂无遗珠',
+    gemBadgeCurated: '✨ FoodRank亲测', gemBadgeAuto: '🔥 隐藏宝藏',
+    gemTestedBy: '由', gemTestedOn: '探索',
+    gemAdminTitle: '➕ 加入遗珠', gemAdminName: '餐厅名称', gemAdminAddress: '地址',
+    gemAdminNote: '推荐理由（你的亲身体验）', gemAdminPhoto: '照片 URL（可选）',
+    gemAdminSave: '📌 加入遗珠', gemAdminSaved: '✅ 已加入遗珠！', gemAdminFail: '❌ 保存失败',
+    gemAutoTag: '低评论数但有社媒热度',
     foodItems: [
       { label:'炒粿条',   search:'炒粿条',   emoji:'🍜' },
       { label:'叉烧饭',   search:'叉烧饭',   emoji:'🍖' },
@@ -528,6 +557,13 @@ const LANG = {
     analyzing: 'Got it! Based on your answers...\nAnalysis complete 🎯',
     rainyHotpot: "Rainy day! How about hotpot to warm up? Or something else?",
     favComing: '❤️ Saved feature coming soon', meComing: '👤 Profile coming soon',
+    gemsTitle: '💎 Hidden Gems Nearby', gemsLoading: '⏳ Finding hidden gems...', gemsEmpty: 'No hidden gems nearby yet',
+    gemBadgeCurated: '✨ FoodRank Tested', gemBadgeAuto: '🔥 Hidden Gem',
+    gemTestedBy: 'By', gemTestedOn: 'Explored',
+    gemAdminTitle: '➕ Add Hidden Gem', gemAdminName: 'Restaurant Name', gemAdminAddress: 'Address',
+    gemAdminNote: 'Why recommend it? (your experience)', gemAdminPhoto: 'Photo URL (optional)',
+    gemAdminSave: '📌 Save Gem', gemAdminSaved: '✅ Gem saved!', gemAdminFail: '❌ Save failed',
+    gemAutoTag: 'Low reviews but social media buzz',
     foodItems: [
       { label:'Char Kuey Teow',        search:'Char Kuey Teow',        emoji:'🍜' },
       { label:'Char Siu Rice',         search:'Char Siu Rice',         emoji:'🍖' },
@@ -638,6 +674,8 @@ function applyLang() {
   if (ht) ht.textContent = L.hotFood;
   const ex = document.getElementById('home-explore-title');
   if (ex) ex.textContent = L.explore;
+  const gt = document.getElementById('home-gems-title');
+  if (gt) gt.textContent = L.gemsTitle;
   // Food chip labels + featured card names — use shuffled indices
   renderHomeItems();
   const ab = document.getElementById('home-about-title');
@@ -744,6 +782,7 @@ async function detectCountry(lat, lng) {
     document.getElementById('search-location-text').textContent =
       `${cityName ? cityName + ', ' : ''}${userCountryName}${symbol ? ' · ' + symbol : ''}`;
 
+    loadHiddenGems(); // load gems now that we have location + countryCode
     console.log(`📍 Country detected: ${code} (${userCountryName}) — Currency: ${symbol}`);
   } catch (e) {
     // Reverse geocode failed, keep defaults but still use coordinates
@@ -751,6 +790,7 @@ async function detectCountry(lat, lng) {
     userCountryCode = 'MY';
     document.getElementById('location-pill').textContent = `📍 ${t('currentLocation')} ✓`;
     document.getElementById('search-location-text').textContent = t('currentLocation');
+    loadHiddenGems();
   }
 }
 
@@ -1175,6 +1215,152 @@ function quickSearchByIndex(i) {
   quickSearch(item.search, item.emoji);
 }
 
+// ============================================================
+// HIDDEN GEMS
+// ============================================================
+async function loadHiddenGems() {
+  const row = document.getElementById('home-gems-row');
+  if (!row) return;
+
+  try {
+    const params = new URLSearchParams({
+      lat: userLat || '', lng: userLng || '', countryCode: userCountryCode
+    });
+    const res  = await fetch(`${API_BASE}/hidden-gems?${params}`);
+    const data = await res.json();
+    const gems = data.gems || [];
+
+    if (gems.length === 0) {
+      row.innerHTML = `<div class="gem-empty">${t('gemsEmpty')}</div>`;
+      // Hide section if no gems at all
+      const section = document.getElementById('home-gems-title');
+      if (section) section.style.display = 'none';
+      row.style.display = 'none';
+      return;
+    }
+
+    window._loadedGems = gems;
+    row.innerHTML = gems.map((g, i) => renderGemCard(g, i)).join('');
+  } catch (e) {
+    const row2 = document.getElementById('home-gems-row');
+    if (row2) row2.innerHTML = `<div class="gem-empty">${t('gemsEmpty')}</div>`;
+  }
+}
+
+function renderGemCard(g, idx) {
+  const badge  = g.isCurated !== false
+    ? t('gemBadgeCurated')
+    : t('gemBadgeAuto');
+  const imgHtml = g.photoUrl
+    ? `<img src="${escHtml(g.photoUrl)}" onerror="this.remove()">`
+    : '💎';
+  const dist = g.distance ? `📍 ${formatDistance(g.distance)}` : '';
+  return `
+    <div class="gem-card" onclick="openGemDetail(${idx})">
+      <div class="gem-card-img">
+        ${imgHtml}
+        <div class="gem-badge">${badge}</div>
+      </div>
+      <div class="gem-card-info">
+        <div class="gem-card-name">${escHtml(g.name)}</div>
+        ${g.note ? `<div class="gem-card-note">${escHtml(g.note)}</div>` : ''}
+        <div class="gem-card-meta">${dist}${dist && g.testedBy ? ' · ' : ''}${g.testedBy ? t('gemTestedBy') + ' ' + escHtml(g.testedBy) : ''}</div>
+      </div>
+    </div>`;
+}
+
+// Opens gem in detail page (if it has a placeId) or shows info toast
+function openGemDetail(idx) {
+  const row  = document.getElementById('home-gems-row');
+  if (!row) return;
+  const cards = row.querySelectorAll('.gem-card');
+  // We need to re-fetch or store gems — store them globally
+  const gems = window._loadedGems || [];
+  const g    = gems[idx];
+  if (!g) return;
+  if (g.placeId) {
+    // Treat like a search result — load detail page
+    searchResults = [{
+      id:               g.placeId,
+      name:             g.name,
+      address:          g.address,
+      googleRating:     null,
+      googleReviewCount:0,
+      vicinity:         g.address,
+      isOpen:           null,
+      emoji:            '💎',
+      photoRef:         null,
+      distanceText:     g.distance ? formatDistance(g.distance) : null,
+      priceLevel:       null,
+      lat:              g.lat,
+      lng:              g.lng,
+      aggregateScore:   null,
+      isHiddenGem:      true,
+      gemNote:          g.note,
+    }];
+    currentEmoji = '💎';
+    screenHistory.push('home');
+    goToDetail(0);
+  } else {
+    showToast(`💎 ${g.name}${g.note ? ' — ' + g.note : ''}`);
+  }
+}
+
+// ── Admin: Add hidden gem form ──────────────────────────────────
+function showAddGemForm() {
+  const existing = document.getElementById('add-gem-form-wrap');
+  if (existing) { existing.remove(); return; }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'add-gem-form-wrap';
+  wrap.style.cssText = 'margin:12px 16px;padding:16px;background:#fff8e1;border:1.5px dashed #ffc107;border-radius:16px;';
+  const r = window._currentRestaurant || {};
+  wrap.innerHTML = `
+    <div style="font-size:13px;font-weight:800;color:#f57c00;margin-bottom:12px;">${t('gemAdminTitle')}</div>
+    <input id="gem-name"    value="${escHtml(r.name||'')}"    placeholder="${t('gemAdminName')}"    style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;border:1px solid #eee;font-size:13px;">
+    <input id="gem-address" value="${escHtml(r.address||r.vicinity||'')}" placeholder="${t('gemAdminAddress')}" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;border:1px solid #eee;font-size:13px;">
+    <textarea id="gem-note" placeholder="${t('gemAdminNote')}" rows="2" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;border:1px solid #eee;font-size:13px;resize:none;"></textarea>
+    <input id="gem-photo"   placeholder="${t('gemAdminPhoto')}"  style="width:100%;margin-bottom:12px;padding:10px;border-radius:10px;border:1px solid #eee;font-size:13px;">
+    <button onclick="submitAddGem()" style="width:100%;padding:12px;background:linear-gradient(135deg,#FF6B35,#ff2d78);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;">
+      ${t('gemAdminSave')}
+    </button>`;
+  // Insert after the navigate button in detail page
+  const navBtn = document.querySelector('.open-app-btn');
+  if (navBtn) navBtn.insertAdjacentElement('afterend', wrap);
+}
+
+async function submitAddGem() {
+  const r    = window._currentRestaurant || {};
+  const name = document.getElementById('gem-name')?.value.trim();
+  if (!name) { showToast('请填入餐厅名称'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/admin/hidden-gems`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _adminKey },
+      body: JSON.stringify({
+        placeId:     r.id || '',
+        name,
+        address:     document.getElementById('gem-address')?.value.trim() || '',
+        lat:         r.lat || '',
+        lng:         r.lng || '',
+        countryCode: userCountryCode,
+        note:        document.getElementById('gem-note')?.value.trim() || '',
+        testedBy:    'FoodRank',
+        photoUrl:    document.getElementById('gem-photo')?.value.trim() || '',
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(t('gemAdminSaved'));
+      document.getElementById('add-gem-form-wrap')?.remove();
+    } else {
+      showToast(t('gemAdminFail'));
+    }
+  } catch (e) {
+    showToast(t('gemAdminFail'));
+  }
+}
+
 // ── Randomised home chips + featured cards ──────────────────────
 const FEAT_COLORS = [
   'linear-gradient(135deg, #FFF3E0, #FFE0B2)',
@@ -1366,7 +1552,7 @@ function renderSortedResults() {
         <div class="rank-num ${rankClass}">${i + 1}</div>
         <div class="rank-img">${imgHtml}</div>
         <div class="rank-info">
-          <div class="rank-name">${escHtml(r.name)}</div>
+          <div class="rank-name">${escHtml(r.name)}${(r.googleReviewCount > 0 && r.googleReviewCount < 50) ? `<span class="gem-rank-badge">💎 ${t('gemBadgeAuto')}</span>` : ''}</div>
           <div class="rank-meta">📍 ${r.distanceText ? r.distanceText + ' · ' : ''}${escHtml(r.address.split(',')[0])} ${openBadge}</div>
           <div class="platform-scores">
             ${r.googleRating ? `<div class="plat-badge google">🟢 G ${r.googleRating.toFixed(1)} (${formatCount(r.googleReviewCount)})</div>` : `<div class="plat-badge" style="color:#aaa;">${t('noRating')}</div>`}
@@ -1589,6 +1775,11 @@ function goToDetail(index) {
     <button class="open-app-btn" onclick="openMaps()">
       ${t('navigate')}
     </button>
+    ${isAdminMode ? `
+    <button onclick="showAddGemForm()" style="margin:0 16px 12px; width:calc(100% - 32px); padding:13px; background:linear-gradient(135deg,#fff0f5,#ffe4f0); border:1.5px dashed #ff2d78; border-radius:14px; font-size:14px; font-weight:800; color:#ff2d78; cursor:pointer;">
+      💎 ${t('gemAdminTitle')}
+    </button>
+    ` : ''}
     ${isAdminMode && r.id ? `
     <div style="margin:8px 16px 16px; padding:10px 14px; background:#fff8e1; border:1px dashed #ffc107; border-radius:12px;">
       <div style="font-size:10px; color:#f57c00; font-weight:700; margin-bottom:4px;">${t('adminPlaceId')}</div>
