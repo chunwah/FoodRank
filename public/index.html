@@ -175,7 +175,7 @@
   .feat-dist { font-size: 11px; color: #aaa; }
 
   /* Hidden Gems */
-  .gem-row { display: flex; gap: 12px; padding: 0 20px 16px; overflow-x: auto; }
+  .gem-row { display: none; gap: 12px; padding: 0 20px 16px; overflow-x: auto; }
   .gem-row::-webkit-scrollbar { display: none; }
   .gem-card { flex-shrink: 0; width: 200px; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 14px rgba(0,0,0,0.08); cursor: pointer; border: 1.5px solid #fff0f5; }
   .gem-card-img { height: 100px; background: linear-gradient(135deg, #fff0f5, #ffe4f0); display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; overflow: hidden; }
@@ -188,7 +188,7 @@
   .gem-empty { padding: 0 20px 16px; font-size: 13px; color: #bbb; }
 
   /* Hidden gem badge on rank cards */
-  .gem-rank-badge { background: linear-gradient(135deg, #FF6B35, #ff2d78); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+  .gem-rank-badge { display: none; background: linear-gradient(135deg, #FF6B35, #ff2d78); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -306,7 +306,7 @@
       </div>
       <div class="search-input-wrap">
         <span>🔍</span>
-        <input class="search-input" id="search-input" type="text" placeholder="输入食物名称..." value="炒粿条">
+        <input class="search-input" id="search-input" type="text" placeholder="输入食物名称...">
         <button class="search-btn" id="search-btn" onclick="doSearch()">搜索</button>
       </div>
     </div>
