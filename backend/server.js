@@ -17,8 +17,9 @@ try { rateLimit = require('express-rate-limit'); } catch(e) { rateLimit = null; 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-const XHS_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID; // Legacy Google CSE (no longer used)
-const SERPAPI_KEY = process.env.SERPAPI_KEY; // SerpAPI key for XHS search via Baidu
+const XHS_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID; // Google Custom Search Engine ID
+// SERPAPI_KEY kept for reference but no longer used — switched to Google CSE
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google Gemini AI
 
 app.use(cors());
@@ -489,8 +490,8 @@ app.get('/api/instagram', async (req, res) => {
   const { restaurant, food = '', city = '' } = req.query;
   if (!restaurant) return res.status(400).json({ error: '需要提供 restaurant 名称' });
 
-  if (!SERPAPI_KEY || SERPAPI_KEY === 'your_serpapi_key_here') {
-    return res.json({ posts: [], total: 0, message: 'SERPAPI_KEY 未设置' });
+  if (!XHS_SEARCH_ENGINE_ID) {
+    return res.json({ posts: [], total: 0, message: 'GOOGLE_SEARCH_ENGINE_ID 未设置' });
   }
 
   // Instagram is mostly English — use English name
@@ -537,22 +538,29 @@ app.get('/api/instagram', async (req, res) => {
 });
 
 /**
- * Search Instagram posts via SerpAPI (Google site:instagram.com)
+ * Shared Google Custom Search Engine helper (replaces SerpAPI)
+ * Free quota: 100 queries/day. Upgrade: $5/1000 queries.
  */
-async function searchInstagram(query) {
-  const response = await axios.get('https://serpapi.com/search', {
+async function googleCSESearch(query, num = 10, gl = 'my', hl = 'en') {
+  const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
     params: {
-      engine:  'google',
-      q:       `site:instagram.com ${query}`,
-      api_key: SERPAPI_KEY,
-      num:     10,
-      gl:      'my',
-      hl:      'en'
+      key: GOOGLE_API_KEY,
+      cx:  XHS_SEARCH_ENGINE_ID,
+      q:   query,
+      num: Math.min(num, 10), // CSE max per request is 10
+      gl,
+      hl
     },
     timeout: 10000
   });
+  return response.data.items || [];
+}
 
-  const items = response.data.organic_results || [];
+/**
+ * Search Instagram posts via Google CSE (site:instagram.com)
+ */
+async function searchInstagram(query) {
+  const items = await googleCSESearch(`site:instagram.com ${query}`, 10, 'my', 'en');
   console.log(`   site:instagram.com "${query}" → ${items.length} 条`);
 
   return items
@@ -562,7 +570,7 @@ async function searchInstagram(query) {
       const usernameMatch = (item.link || '').match(/instagram\.com\/([^/p][^/]*)\//);
       const username = usernameMatch ? '@' + usernameMatch[1] : '';
 
-      const thumbnail = item.thumbnail || null;
+      const thumbnail = item.pagemap?.cse_thumbnail?.[0]?.src || null;
       const text = (item.title || '') + ' ' + (item.snippet || '');
       const sentiment = analyzeSentiment(text);
 
@@ -617,8 +625,8 @@ app.get('/api/klfoodie', async (req, res) => {
   const { restaurant, food = '', country = 'MY' } = req.query;
   if (!restaurant) return res.status(400).json({ error: '需要提供 restaurant 名称' });
 
-  if (!SERPAPI_KEY || SERPAPI_KEY === 'your_serpapi_key_here') {
-    return res.json({ posts: [], total: 0, message: 'SERPAPI_KEY 未设置' });
+  if (!XHS_SEARCH_ENGINE_ID) {
+    return res.json({ posts: [], total: 0, message: 'GOOGLE_SEARCH_ENGINE_ID 未设置' });
   }
 
   // Pick the right foodie site based on country
@@ -665,40 +673,28 @@ app.get('/api/klfoodie', async (req, res) => {
 });
 
 /**
- * Search a foodie site (klfoodie.com or singaporefoodie.com) via SerpAPI
+ * Search a foodie site (klfoodie.com or singaporefoodie.com) via Google CSE
  */
 async function searchFoodieSite(query, siteName, gl = 'my') {
-  const response = await axios.get('https://serpapi.com/search', {
-    params: {
-      engine:  'google',
-      q:       `site:${siteName} ${query}`,
-      api_key: SERPAPI_KEY,
-      num:     5,
-      gl,
-      hl:      'en'
-    },
-    timeout: 10000
-  });
+  const items = await googleCSESearch(`site:${siteName} ${query}`, 5, gl, 'en');
+  console.log(`   site:${siteName} "${query}" → ${items.length} 条`);
 
-  const results = response.data.organic_results || [];
-  console.log(`   site:${siteName} "${query}" → ${results.length} 条`);
-
-  return results
+  return items
     .filter(r => (r.link || '').includes(siteName))
     .map(r => {
-      const ratingRaw = r.rich_snippet?.top?.detected_extensions?.rating
-                     || r.rich_snippet?.bottom?.detected_extensions?.rating
-                     || null;
-      const reviewCount = r.rich_snippet?.top?.detected_extensions?.reviews
-                       || r.rich_snippet?.bottom?.detected_extensions?.reviews
-                       || null;
+      // Google CSE doesn't return rich snippets — try extracting rating from snippet text
+      // e.g. "4.5/5", "4.5 stars", "Rated 4.5"
+      const snippetText = (r.snippet || '') + ' ' + (r.title || '');
+      const ratingMatch = snippetText.match(/(\d+\.?\d*)\s*(?:\/\s*5|stars?|★|out of 5)/i)
+                       || snippetText.match(/[Rr]ated?\s+(\d+\.?\d*)/);
+      const reviewMatch = snippetText.match(/(\d+)\s*(?:reviews?|ratings?|评价)/i);
 
       return {
         title:       r.title   || '',
         snippet:     r.snippet || '',
         link:        r.link    || '',
-        rating:      ratingRaw ? parseFloat(ratingRaw) : null,
-        reviewCount: reviewCount ? parseInt(reviewCount) : null,
+        rating:      ratingMatch ? parseFloat(ratingMatch[1]) : null,
+        reviewCount: reviewMatch ? parseInt(reviewMatch[1]) : null,
         matchType:   'exact'
       };
     });
@@ -720,8 +716,8 @@ app.get('/api/tiktok', async (req, res) => {
   const { restaurant, food = '', city = '' } = req.query;
   if (!restaurant) return res.status(400).json({ error: '需要提供 restaurant 名称' });
 
-  if (!SERPAPI_KEY || SERPAPI_KEY === 'your_serpapi_key_here') {
-    return res.json({ videos: [], total: 0, message: 'SERPAPI_KEY 未设置' });
+  if (!XHS_SEARCH_ENGINE_ID) {
+    return res.json({ videos: [], total: 0, message: 'GOOGLE_SEARCH_ENGINE_ID 未设置' });
   }
 
   const searchName = extractXhsSearchName(restaurant);
@@ -750,23 +746,11 @@ app.get('/api/tiktok', async (req, res) => {
 });
 
 /**
- * Search TikTok videos via SerpAPI (Google site:tiktok.com)
+ * Search TikTok videos via Google CSE (site:tiktok.com)
  * Returns array of { title, link, thumbnail, creator, views, matchType }
  */
 async function searchTikTok(query) {
-  const response = await axios.get('https://serpapi.com/search', {
-    params: {
-      engine:  'google',
-      q:       `site:tiktok.com ${query}`,
-      api_key: SERPAPI_KEY,
-      num:     10,
-      hl:      'zh-cn',
-      gl:      'my'   // Malaysia — closer to SEA food content
-    },
-    timeout: 10000
-  });
-
-  const items = response.data.organic_results || [];
+  const items = await googleCSESearch(`site:tiktok.com ${query}`, 10, 'my', 'zh-cn');
   console.log(`   Google site:tiktok.com "${query}" → ${items.length} 条`);
 
   return items
@@ -777,15 +761,8 @@ async function searchTikTok(query) {
       const creatorMatch = (item.link || '').match(/@([^/]+)/);
       const creator = creatorMatch ? '@' + creatorMatch[1] : '';
 
-      // Thumbnail from rich snippet or inline image
-      const thumbnail = item.thumbnail
-        || item.rich_snippet?.top?.extensions?.[0]
-        || null;
-
-      // View count sometimes appears in rich snippet extensions
-      const rawViews = item.rich_snippet?.top?.detected_extensions?.views
-        || item.rich_snippet?.top?.detected_extensions?.likes
-        || null;
+      // Thumbnail from CSE pagemap
+      const thumbnail = item.pagemap?.cse_thumbnail?.[0]?.src || null;
 
       return {
         title:     item.title   || '',
@@ -793,7 +770,7 @@ async function searchTikTok(query) {
         snippet:   item.snippet || '',
         thumbnail,
         creator,
-        views:     rawViews ? parseInt(rawViews) : null,
+        views:     null, // Google CSE doesn't return view counts
         matchType: 'exact'
       };
     });
@@ -1454,13 +1431,13 @@ app.listen(PORT, () => {
   console.log('🍜 FoodRank Server 启动成功！');
   console.log(`📡 本地地址: http://localhost:${PORT}`);
   console.log(`🔑 Google Places Key: ${GOOGLE_API_KEY ? '✅ 已设置' : '❌ 未设置 (请配置 .env 文件)'}`);
-  console.log(`📕 小红书 SerpAPI Key: ${SERPAPI_KEY && SERPAPI_KEY !== 'your_serpapi_key_here' ? '✅ 已设置' : '⚠️  未设置 (注册 serpapi.com 获取免费 Key)'}`);
+  console.log(`🔍 Google CSE ID: ${XHS_SEARCH_ENGINE_ID ? '✅ 已设置 (Instagram/TikTok/KLFoodie)' : '⚠️  未设置 (GOOGLE_SEARCH_ENGINE_ID)'}`);
   console.log('');
   console.log('可用 API 路由:');
   console.log('  POST /api/search    - 搜索附近餐厅 (Google Places)');
-  console.log('  GET  /api/instagram - 搜索 Instagram 帖子 (SerpAPI/Google)');
-  console.log('  GET  /api/tiktok    - 搜索 TikTok 视频 (SerpAPI/Google)');
-  console.log('  GET  /api/klfoodie  - 搜索 KLFoodie 评论 (SerpAPI/Google)');
+  console.log('  GET  /api/instagram - 搜索 Instagram 帖子 (Google CSE)');
+  console.log('  GET  /api/tiktok    - 搜索 TikTok 视频 (Google CSE)');
+  console.log('  GET  /api/klfoodie  - 搜索 KLFoodie 评论 (Google CSE)');
   console.log('  GET  /api/youtube   - 搜索 YouTube 视频');
   console.log('  GET  /api/place/:id - 获取餐厅详情');
   console.log('  GET  /api/health    - 健康检查');

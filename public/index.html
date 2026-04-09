@@ -261,9 +261,9 @@
         </div>
       </div>
 
-      <!-- ── Hidden Gems ── -->
-      <div class="section-title" id="home-gems-title" style="display: none;">💎 附近遗珠</div>
-      <div class="gem-row" id="home-gems-row">
+      <!-- ── Hidden Gems (temp hidden) ── -->
+      <div class="section-title" id="home-gems-title" style="display:none;">💎 附近遗珠</div>
+      <div class="gem-row" id="home-gems-row" style="display:none;">
         <div class="gem-empty" id="home-gems-loading">⏳ 正在寻找遗珠...</div>
       </div>
 
@@ -697,9 +697,9 @@ function applyLang() {
   document.getElementById('chip-rating').textContent = L.sortRating;
   document.getElementById('chip-distance').textContent = L.sortDistance;
   document.getElementById('chip-reviews').textContent = L.sortReviews;
-  // Default search input value
+  // Leave search input empty — user should type what they want
   const si2 = document.getElementById('search-input');
-  if (si2 && searchResults.length === 0) si2.value = L.foodItems[0].search;
+  if (si2 && searchResults.length === 0) si2.value = '';
   // Loading text
   const lm = document.getElementById('loading-main-text');
   if (lm) lm.textContent = L.loadingMain;
@@ -782,7 +782,7 @@ async function detectCountry(lat, lng) {
     document.getElementById('search-location-text').textContent =
       `${cityName ? cityName + ', ' : ''}${userCountryName}${symbol ? ' · ' + symbol : ''}`;
 
-    loadHiddenGems(); // load gems now that we have location + countryCode
+    // loadHiddenGems(); // temp hidden
     console.log(`📍 Country detected: ${code} (${userCountryName}) — Currency: ${symbol}`);
   } catch (e) {
     // Reverse geocode failed, keep defaults but still use coordinates
@@ -790,7 +790,7 @@ async function detectCountry(lat, lng) {
     userCountryCode = 'MY';
     document.getElementById('location-pill').textContent = `📍 ${t('currentLocation')} ✓`;
     document.getElementById('search-location-text').textContent = t('currentLocation');
-    loadHiddenGems();
+    // loadHiddenGems(); // temp hidden
   }
 }
 
@@ -824,7 +824,7 @@ function goBack() {
       searchResults = [];
       document.getElementById('results-list').innerHTML = '';
       const si = document.getElementById('search-input');
-      if (si) si.value = t('foodItems')[0].search;
+      if (si) si.value = '';
     }
   }
 }
@@ -1775,7 +1775,7 @@ function goToDetail(index) {
     <button class="open-app-btn" onclick="openMaps()">
       ${t('navigate')}
     </button>
-    ${isAdminMode ? `
+    ${false /* temp hidden: isAdminMode */ ? `
     <button onclick="showAddGemForm()" style="margin:0 16px 12px; width:calc(100% - 32px); padding:13px; background:linear-gradient(135deg,#fff0f5,#ffe4f0); border:1.5px dashed #ff2d78; border-radius:14px; font-size:14px; font-weight:800; color:#ff2d78; cursor:pointer;">
       💎 ${t('gemAdminTitle')}
     </button>
